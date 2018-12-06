@@ -6,7 +6,7 @@ import tuan.tidi.entity.Coupon;
 public class CouponDTO {
 	private int id;
 	private String couponCode;
-	private CampaignDTO campagin;
+	private CampaignShortDTO campaign;
 	private int money;
 	private float percent;
 	private int threshold;
@@ -42,12 +42,12 @@ public class CouponDTO {
 		this.couponCode = couponCode;
 	}
 
-	public CampaignDTO getCampagin() {
-		return campagin;
+	public CampaignShortDTO getCampaign() {
+		return campaign;
 	}
 
-	public void setCampagin(CampaignDTO campagin) {
-		this.campagin = campagin;
+	public void setCampaign(CampaignShortDTO campaign) {
+		this.campaign = campaign;
 	}
 
 	public int getMoney() {

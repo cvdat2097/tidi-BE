@@ -61,4 +61,8 @@ public abstract class API {
 	public static final String UPDATEITEM = "/api/v1/cart/update";
 	public static final String DELETEITEM = "/api/v1/cart/delete";
 
+	public static final String CHECKOUT = "/api/v1/checkout/checkout";
+	public static final String GETORDERS = "/api/v1/checkout/all";
+	public static final String GETONEORDER = "/api/v1/checkout/one";
+
 }

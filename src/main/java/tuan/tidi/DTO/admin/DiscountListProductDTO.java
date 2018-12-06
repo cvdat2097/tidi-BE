@@ -5,21 +5,20 @@ import java.util.List;
 import tuan.tidi.entity.Discount;
 import tuan.tidi.service.FormatDate;
 
-public class DiscountDTO {
+public class DiscountListProductDTO {
 	private int id;
-	private int productId;
+	private List<Integer> productsId;
 	private String percent;
 	private String startTime;
 	private String expiredTime;
 	private String active;
-	
-	public DiscountDTO() {
+
+	public DiscountListProductDTO() {
 
 	}
 
-	public DiscountDTO(Discount discount) {
+	public DiscountListProductDTO(Discount discount) {
 		this.id = discount.getId();
-		this.productId = discount.getProductId();
 		this.percent = Float.toString(discount.getPercent());
 		this.startTime = FormatDate.formatDateTime(discount.getStartTime());
 		this.expiredTime = FormatDate.formatDateTime(discount.getExpiredTime());
@@ -34,13 +33,14 @@ public class DiscountDTO {
 		this.id = id;
 	}
 
-	public int getProductId() {
-		return productId;
+	public List<Integer> getProductsId() {
+		return productsId;
 	}
 
-	public void setProductId(int productId) {
-		this.productId = productId;
+	public void setProductsId(List<Integer> productsId) {
+		this.productsId = productsId;
 	}
+
 
 	public String getPercent() {
 		return percent;

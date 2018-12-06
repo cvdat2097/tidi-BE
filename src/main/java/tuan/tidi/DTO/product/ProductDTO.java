@@ -10,7 +10,7 @@ public class ProductDTO {
 	private int amount;
 	private String images;
 	private String description;
-	private float disc_percent;
+	private float discPercent;
 	private CategoryDTO category;
 	private BrandDTO brand;
 	private BranchDTO branch;
@@ -30,12 +30,12 @@ public class ProductDTO {
 		
 	}
 	
-	public float getDisc_percent() {
-		return disc_percent;
+	public float getDiscPercent() {
+		return discPercent;
 	}
 
-	public void setDisc_percent(float disc_percent) {
-		this.disc_percent = disc_percent;
+	public void setDiscPercent(float discPercent) {
+		this.discPercent = discPercent;
 	}
 
 	public int getId() {

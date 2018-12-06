@@ -1,5 +1,6 @@
 package tuan.tidi.repository.product;
 
+import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -39,15 +40,14 @@ public class CampaignRepositoryCustomImpl implements CampaignRepositoryCustom {
 					return null;
 				}
 			} else {
-				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				Date st, et;
 				try {
-					st = format.parse(startTime);
+					st = FormatDate.parseDateTime(startTime);
 				} catch (Exception e) {
 					st = new Date();
 				}
 				try {
-					et = format.parse(expiredTime);
+					et = FormatDate.parseDateTime(expiredTime);
 				} catch (Exception e) {
 					et = new Date();
 				}
@@ -70,15 +70,14 @@ public class CampaignRepositoryCustomImpl implements CampaignRepositoryCustom {
 					return null;
 				}
 			} else {
-				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				Date st, et;
 				try {
-					st = format.parse(startTime);
+					st = FormatDate.parseDateTime(startTime);
 				} catch (Exception e) {
 					st = new Date();
 				}
 				try {
-					et = format.parse(expiredTime);
+					et = FormatDate.parseDateTime(expiredTime);
 				} catch (Exception e) {
 					et = new Date();
 				}

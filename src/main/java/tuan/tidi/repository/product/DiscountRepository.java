@@ -8,4 +8,5 @@ import tuan.tidi.entity.Discount;
 
 public interface DiscountRepository extends CrudRepository<Discount, Long>{
 	List<Discount> findByProductIdLike(int productId);
+	Discount findById(int id);
 }

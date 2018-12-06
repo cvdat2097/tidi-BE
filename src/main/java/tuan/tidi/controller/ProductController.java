@@ -121,7 +121,7 @@ public class ProductController {
 				categoryRepository.findById(product.getCategoryId()).getCategoryName()));
 		productDTO.setIndustry(new IndustryDTO(product.getIndustryId(),
 				industryRepository.findById(product.getIndustryId()).getIndustryName()));
-		productDTO.setDisc_percent(discountRepositoryCustomImpl.findLastedDiscount(product.getId()));
+		productDTO.setDiscPercent(discountRepositoryCustomImpl.findLastedDiscount(product.getId()));
 		return productDTO;
 	}
 
@@ -146,7 +146,9 @@ public class ProductController {
 			lProductDTO.add(tranferDTO(pro));
 		}
 		listProductDTO.setProducts(lProductDTO);
-		listProductDTO.setTotalItems(productRepository.findAll().size());
+		productSearchDTO.setLimit(0);
+		productSearchDTO.setOffset(0);
+		listProductDTO.setTotalItems(productRepositoryCustomImpl.search(productSearchDTO).size());
 		return listProductDTO;
 	}
 }
