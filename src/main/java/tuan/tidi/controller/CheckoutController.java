@@ -17,7 +17,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import tuan.tidi.DTO.StatusDTO;
 import tuan.tidi.DTO.checkout.CartDetailDTO;
 import tuan.tidi.DTO.checkout.CheckoutDTO;
+import tuan.tidi.DTO.checkout.ListOrdersDTO;
 import tuan.tidi.DTO.checkout.ListProductDTO;
+import tuan.tidi.DTO.checkout.OrderDTO;
+import tuan.tidi.DTO.checkout.OrderHistoryDTO;
+import tuan.tidi.DTO.checkout.OrderIdDTO;
+import tuan.tidi.DTO.checkout.OrderStatusDTO;
+import tuan.tidi.DTO.checkout.OrdersDTO;
 import tuan.tidi.DTO.product.BranchDTO;
 import tuan.tidi.DTO.product.BrandDTO;
 import tuan.tidi.DTO.product.CategoryDTO;
@@ -37,6 +43,7 @@ import tuan.tidi.repository.checkout.CartRepository;
 import tuan.tidi.repository.checkout.CartRepositoryCustomImpl;
 import tuan.tidi.repository.checkout.OrderDetailRepository;
 import tuan.tidi.repository.checkout.OrderRepository;
+import tuan.tidi.repository.checkout.OrdersHistoryRepository;
 import tuan.tidi.repository.product.BranchRepository;
 import tuan.tidi.repository.product.BrandRepository;
 import tuan.tidi.repository.product.CategoryRepository;
@@ -91,6 +98,9 @@ public class CheckoutController {
 	
 	@Autowired
 	private DiscountRepositoryCustomImpl discountRepositoryCustomImpl;
+	
+	@Autowired
+	private OrdersHistoryRepository ordersHistoryRepository;
 	
 	//Insert product
 	@CrossOrigin(origins = "*")
@@ -285,8 +295,15 @@ public class CheckoutController {
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}
-		Coupon coupon = couponRepository.findByCouponCodeLike(checkoutDTO.getCouponCode());
-
+		Coupon coupon = new Coupon();
+		if (checkoutDTO.getCouponCode()!=null && !checkoutDTO.getCouponCode().isEmpty())
+			coupon = couponRepository.findByCouponCodeLike(checkoutDTO.getCouponCode());
+		else {
+			coupon.setPercent(0);
+			coupon.setThreshold(0);
+			coupon.setMoney(0);
+		}
+			
 		//check coupon
 		if (coupon == null) {
 			statusDTO.setMessage("Coupon is wrong!!!");
@@ -313,15 +330,23 @@ public class CheckoutController {
 			if (product.getActive() == "FALSE") statusDTO.setMessage(statusDTO.getMessage() + "ProductId " +pro.getId()+ " has been block!!!\n");
 			if (product.getAmount() == 0) statusDTO.setMessage(statusDTO.getMessage() + "ProductId " +pro.getId()+ " has run out!!!\n");
 			if (product.getAmount() < pro.getAmount()) statusDTO.setMessage(statusDTO.getMessage() + "ProductId " +pro.getId()+ " is not enough!!!\n");
-			total += pro.getPrice() * pro.getAmount() * pro.getDiscPercent();
+			total += pro.getPrice() * pro.getAmount() * (float)(1 - pro.getDiscPercent());
 		}
 		if (statusDTO.getMessage() != "") {
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}
 		
+		if (total >= coupon.getThreshold())
+			total = (int)(total * (1-coupon.getPercent()) - coupon.getMoney());
+		else {
+			statusDTO.setMessage("Total < Threshold!!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
 		
 		//subtract coupon amount
+		if (checkoutDTO.getCouponCode() != null && !checkoutDTO.getCouponCode().isEmpty())
 		if (coupon.getAmount() != -1)
 		coupon.setAmount(coupon.getAmount()-1);
 		
@@ -367,6 +392,7 @@ public class CheckoutController {
 		ordershistory.setDateTime(new Date());
 		ordershistory.setOrderId(orderId);
 		ordershistory.setStatus("CHECKED");
+		ordersHistoryRepository.save(ordershistory);
 		
 		//delete cart
 		cartRepository.deleteAll(cartRepository.findByAccountsId(accountId));
@@ -376,5 +402,99 @@ public class CheckoutController {
 		return statusDTO;
 	}
 	
-	//
+	//get all orders
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.GETORDERS)
+	@ResponseBody
+	public ListOrdersDTO loadOrders(HttpServletRequest httpServletRequest) {
+		ListOrdersDTO listOrdersDTO = new ListOrdersDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String authToken = httpServletRequest.getHeader("authorization");
+		statusDTO = checkJwt.checkJWT(authToken, false);
+		if (statusDTO.getStatus() == "FALSE") {
+			listOrdersDTO.setStatus(statusDTO);
+			return listOrdersDTO;
+		}
+		
+		Accounts account = accountsRepository.findByUsernameLike(jwtService.getUsernameFromToken(authToken));
+		List<Orders> orders = orderRepository.findByAccountsId(account.getId());
+		if (orders == null) {
+			statusDTO.setMessage("You dont have any orders! Continue shopping :D");
+			statusDTO.setStatus("TRUE");
+			return listOrdersDTO;
+		}
+		List<OrdersDTO> lordersDTO = new ArrayList<OrdersDTO>();
+		for(Orders ord : orders) {
+			OrdersDTO ordersDTO = new OrdersDTO(ord);
+			List<OrdersHistory> ordersHistory = ordersHistoryRepository.findByOrderId(ord.getId());
+			for(OrdersHistory orh : ordersHistory) {
+				 if (ordersDTO.getDate() == null) {
+					 ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
+					 ordersDTO.setStatus(orh.getStatus());
+				 }else {
+					 if (orh.getDateTime().compareTo(FormatDate.parseDateTime(ordersDTO.getDate())) > 0) {
+						 ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
+						 ordersDTO.setStatus(orh.getStatus());
+					 }
+				 }
+			}
+			lordersDTO.add(ordersDTO);
+		}
+		listOrdersDTO.setOrders(lordersDTO);
+		statusDTO.setMessage("Successful!");
+		statusDTO.setStatus("TRUE");
+		listOrdersDTO.setStatus(statusDTO);
+		return listOrdersDTO;
+	}
+	
+	//get one orders
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.GETORDER)
+	@ResponseBody
+	public OrderStatusDTO getOneOrder(@RequestBody OrderIdDTO orderIdDTO,HttpServletRequest httpServletRequest) {
+		OrderStatusDTO orderStatusDTO = new OrderStatusDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String authToken = httpServletRequest.getHeader("authorization");
+		statusDTO = checkJwt.checkJWT(authToken, false);
+		if (statusDTO.getStatus() == "FALSE") {
+			orderStatusDTO.setStatus(statusDTO);
+			return orderStatusDTO;
+		}
+		Orders order = orderRepository.findById(orderIdDTO.getOrderId());
+		//check orderId == token
+		if (order.getAccountsId() != accountsRepository.findByUsernameLike(jwtService.getUsernameFromToken(authToken)).getId()) {
+			statusDTO.setMessage("OrderId is not yours");
+			statusDTO.setStatus("FAlSE");
+			orderStatusDTO.setStatus(statusDTO);
+			return orderStatusDTO;
+		}
+		OrderDTO orderDTO = new OrderDTO(order);
+		
+		//add products
+		List<OrdersDetail> ordersDetail = orderDetailRepository.findByOrdersId(orderIdDTO.getOrderId());
+		List<ProductDTO> lproductDTO = new ArrayList<ProductDTO>();
+		for (OrdersDetail ord : ordersDetail) {
+			Product product = productRepository.findById(ord.getProductId());
+			ProductDTO productDTO = tranferDTO(product);
+			productDTO.setAmount(ord.getAmount());
+			productDTO.setDiscPercent(1-((float)ord.getFinalPrice()/(float)ord.getOriginalPrice()));
+			productDTO.setPrice(ord.getOriginalPrice());
+			lproductDTO.add(productDTO);
+		}
+		orderDTO.setProducts(lproductDTO);
+		
+		//add history
+		List<OrdersHistory> ordersHistory = ordersHistoryRepository.findByOrderId(orderIdDTO.getOrderId());
+		List<OrderHistoryDTO> lorderHistoryDTO = new ArrayList<OrderHistoryDTO>();
+		for (OrdersHistory ord : ordersHistory) {
+			lorderHistoryDTO.add(new OrderHistoryDTO(ord));
+		}
+		orderDTO.setHistory(lorderHistoryDTO);
+		
+		orderStatusDTO.setOrder(orderDTO);
+		statusDTO.setMessage("Successful!");
+		statusDTO.setStatus("TRUE");
+		orderStatusDTO.setStatus(statusDTO);
+		return orderStatusDTO;
+	}
 }
