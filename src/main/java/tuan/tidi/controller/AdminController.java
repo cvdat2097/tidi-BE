@@ -367,7 +367,7 @@ public class AdminController {
 		for (Product pro : product) {
 			lProductDTO.add(tranferDTO(pro));
 		}
-		productSearchDTO.setLimit(0);
+		productSearchDTO.setLimit(100);
 		productSearchDTO.setOffset(0);
 		listProductDTO.setTotalItems(productRepositoryCustomImpl.search(productSearchDTO).size());
 		statusDTO.setMessage("Successful!");

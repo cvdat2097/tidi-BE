@@ -218,7 +218,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 					float percent = discountRepositoryCustomImpl.findLastedDiscount(pro.getId());
 					if (pro.getPrice() * (1 - percent) < maxPrice && pro.getPrice() * (1 - percent) > minPrice) {
 						d++;
-						if (d - offset >= limit)
+						if (d - offset >= limit && limit != 0)
 							break;
 						if (d >= offset)
 							product.add(pro);
@@ -228,7 +228,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 				d = 0;
 				for (Product pro : lproduct) {
 					d++;
-					if (d - offset >= limit) break;
+					if (d - offset >= limit && limit != 0) break;
 					if (d>=offset) product.add(pro);
 				}
 			}
@@ -240,7 +240,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 		}
 		else {
 			try {
-				return (List<Product>) entityManager.createQuery(sql).getResultList();
+				return (List<Product>) entityManager.createQuery(sql).setFirstResult(productSearchDTO.getOffset()).setMaxResults((productSearchDTO.getLimit())).getResultList();
 			}catch(Exception e){
 				return null;
 			}
