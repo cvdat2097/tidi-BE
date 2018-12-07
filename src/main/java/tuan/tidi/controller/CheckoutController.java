@@ -484,7 +484,7 @@ public class CheckoutController {
 	
 	//get one orders
 	@CrossOrigin(origins = "*")
-	@PostMapping(API.GETORDER)
+	@PostMapping(API.GETONEORDER)
 	@ResponseBody
 	public OrderStatusDTO getOneOrder(@RequestBody OrderIdDTO orderIdDTO,HttpServletRequest httpServletRequest) {
 		OrderStatusDTO orderStatusDTO = new OrderStatusDTO();
