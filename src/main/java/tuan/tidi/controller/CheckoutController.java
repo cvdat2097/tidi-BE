@@ -130,7 +130,7 @@ public class CheckoutController {
 		}
 		
 		//Check amount
-		if (productRepository.findById(cartDetailDTO.getProductId()) == null) {
+		if (cartDetailDTO.getAmount() <= 0) {
 			statusDTO.setMessage("Amount must be greater than 0!!!");
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
@@ -286,6 +286,30 @@ public class CheckoutController {
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, false);
 		if (statusDTO.getStatus() == "FALSE") return statusDTO;
+		// check null
+		if(checkoutDTO.getAddress() == null || checkoutDTO.getAddress().isEmpty()) {
+			statusDTO.setMessage("Address must be not null!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
+		
+		if(checkoutDTO.getPhone() == null || checkoutDTO.getPhone().isEmpty()) {
+			statusDTO.setMessage("Phone must be not null!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
+		
+		if(checkoutDTO.getEmail() == null || checkoutDTO.getEmail().isEmpty()) {
+			statusDTO.setMessage("Email must be not null!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
+		
+		if(checkoutDTO.getFullName() == null || checkoutDTO.getFullName().isEmpty()) {
+			statusDTO.setMessage("FullName must be not null!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
 		
 		int accountId = accountsRepository.findByUsernameLike(jwtService.getUsernameFromToken(authToken)).getId();
 		//check cart
@@ -302,6 +326,8 @@ public class CheckoutController {
 			coupon.setPercent(0);
 			coupon.setThreshold(0);
 			coupon.setMoney(0);
+			coupon.setAmount(1);
+			coupon.setId(1);
 		}
 			
 		//check coupon
@@ -366,7 +392,7 @@ public class CheckoutController {
 		order.setCouponId(coupon.getId());
 		order.setEmail(checkoutDTO.getEmail());
 		order.setFullName(checkoutDTO.getFullName());
-		order.setNote("Giao hang du kien: " + FormatDate.formatDate(new Date()));
+		order.setNote(checkoutDTO.getNote());
 		order.setPhone(checkoutDTO.getPhone());
 		order.setStatus("CHECKED");
 		order.setTotal(total);
@@ -379,11 +405,20 @@ public class CheckoutController {
 			Product product = productRepository.findById(pro.getId());
 			ordersDetail.setActive("TRUE");
 			ordersDetail.setAmount(pro.getAmount());
-			ordersDetail.setFinalPrice( (int) (pro.getPrice()*pro.getDiscPercent()));
+			ordersDetail.setFinalPrice( (int) ((float)pro.getPrice()*(float)(1 - pro.getDiscPercent())));
 			ordersDetail.setOrdersId(orderId);
 			ordersDetail.setOriginalPrice(pro.getPrice());
 			ordersDetail.setProductId(pro.getId());
-			orderDetailRepository.save(ordersDetail);
+			try{
+				orderDetailRepository.save(ordersDetail);
+			}catch (Exception e) {
+				
+			}
+			try{
+				orderDetailRepository.save(ordersDetail);
+			}catch (Exception e) {
+				
+			}
 		}
 		
 		//insert orderHistory

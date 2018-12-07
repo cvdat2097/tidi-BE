@@ -15,7 +15,7 @@ public class Orders {
 	@Column(name = "accountsId", nullable = false)
 	private int accountsId;
 	
-	@Column(name = "fullName", nullable = false)
+	@Column(name = "fullname", nullable = false)
 	private String fullName;
 	
 	@Column(name = "total", nullable = false)

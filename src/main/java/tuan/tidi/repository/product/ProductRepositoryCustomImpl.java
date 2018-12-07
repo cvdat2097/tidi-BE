@@ -231,7 +231,6 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 					if (d - offset >= limit) break;
 					if (d>=offset) product.add(pro);
 				}
-				return lproduct;
 			}
 			try {
 				return product;

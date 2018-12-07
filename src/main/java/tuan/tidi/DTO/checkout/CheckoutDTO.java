@@ -6,6 +6,7 @@ public class CheckoutDTO {
 	private String phone;
 	private String address;
 	private String email;
+	private String note;
 	public String getFullName() {
 		return fullName;
 	}
@@ -16,6 +17,14 @@ public class CheckoutDTO {
 
 	public String getPhone() {
 		return phone;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public void setNote(String note) {
+		this.note = note;
 	}
 
 	public void setPhone(String phone) {
