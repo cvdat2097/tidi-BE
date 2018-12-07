@@ -203,6 +203,8 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 			}
 
 			List<Product> lproduct = (List<Product>) query.getResultList();
+			int limit = productSearchDTO.getLimit();
+			int offset = productSearchDTO.getOffset() + 1;
 			if (productSearchDTO.getQuery().getMinPrice() != 0 || productSearchDTO.getQuery().getMaxPrice() != 0) {
 				int maxPrice;
 				int minPrice = productSearchDTO.getQuery().getMinPrice();
@@ -210,8 +212,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 					maxPrice = 999999999;
 				else
 					maxPrice = productSearchDTO.getQuery().getMaxPrice();
-				int limit = productSearchDTO.getLimit();
-				int offset = productSearchDTO.getOffset() + 1;
+				
 				d = 0;
 				for (Product pro : lproduct) {
 					float percent = discountRepositoryCustomImpl.findLastedDiscount(pro.getId());
@@ -224,6 +225,12 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 					}
 				}
 			} else {
+				d = 0;
+				for (Product pro : lproduct) {
+					d++;
+					if (d - offset >= limit) break;
+					if (d>=offset) product.add(pro);
+				}
 				return lproduct;
 			}
 			try {
