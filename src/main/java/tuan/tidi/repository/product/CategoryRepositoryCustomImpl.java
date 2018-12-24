@@ -35,8 +35,9 @@ public class CategoryRepositoryCustomImpl implements CategoryRepositoryCustom{
 	}
 
 	public List<Category> search(SearchDTO searchDTO){
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
 		
-		String k = searchDTO.getQuery().getKeyword();
 		if (k != null && !k.isEmpty()) {
 			try {
 				String sql = "Select e from Category e where e.categoryName like CONCAT('%',?0,'%') or e.active like CONCAT('%',?1,'%')";

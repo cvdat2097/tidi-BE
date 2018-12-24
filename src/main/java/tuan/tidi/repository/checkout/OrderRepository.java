@@ -13,4 +13,7 @@ public interface OrderRepository extends CrudRepository<Orders, Long> {
 	
 	List<Orders> findByAccountsId(int accountsId);
 	Orders findById(int id);
+	
+	Orders findByZptransid(Long zptransid);
+	Orders findByApptransid(String apptransid);
 }

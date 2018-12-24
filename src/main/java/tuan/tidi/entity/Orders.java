@@ -42,6 +42,39 @@ public class Orders {
 	@Column(name = "active", nullable = false)
 	private String active;
 
+	@Column(name = "zalopayToken")
+	private String zalopayToken;
+	
+	@Column(name = "zptransid")
+	private Long zptransid;
+	
+	@Column(name = "apptransid")
+	private String apptransid;
+
+	public String getApptransid() {
+		return apptransid;
+	}
+
+	public void setApptransid(String apptransid) {
+		this.apptransid = apptransid;
+	}
+
+	public Long getZptransid() {
+		return zptransid;
+	}
+
+	public void setZptransid(Long zptransid) {
+		this.zptransid = zptransid;
+	}
+
+	public String getZalopayToken() {
+		return zalopayToken;
+	}
+
+	public void setZalopayToken(String zalopayToken) {
+		this.zalopayToken = zalopayToken;
+	}
+
 	public int getId() {
 		return id;
 	}

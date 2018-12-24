@@ -26,9 +26,12 @@ public class CampaignRepositoryCustomImpl implements CampaignRepositoryCustom {
 	private CampaignRepository campaignRepository;
 	
 	public List<Campaign> search(SearchDTO searchDTO) {
-		String k = searchDTO.getQuery().getKeyword();
-		String startTime = searchDTO.getQuery().getStartTime();
-		String expiredTime = searchDTO.getQuery().getExpiredTime();
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
+		String startTime = null;
+		if (searchDTO.getQuery() != null) startTime = searchDTO.getQuery().getStartTime();
+		String expiredTime = null;
+		if (searchDTO.getQuery() != null) expiredTime = searchDTO.getQuery().getExpiredTime();
 		if (k != null && !k.isEmpty()) {
 			if ((startTime == null || startTime.isEmpty()) && (expiredTime == null || expiredTime.isEmpty())) {
 				try {
@@ -44,13 +47,15 @@ public class CampaignRepositoryCustomImpl implements CampaignRepositoryCustom {
 				try {
 					st = FormatDate.parseDateTime(startTime);
 				} catch (Exception e) {
-					st = new Date();
+					st = FormatDate.parseDateTime("2000-01-01 00:00:00");
 				}
 				try {
 					et = FormatDate.parseDateTime(expiredTime);
 				} catch (Exception e) {
 					et = new Date();
 				}
+				if (st == null) st = FormatDate.parseDateTime("2000-01-01 00:00:00");
+				if (et == null) et = new Date();
 				try {
 					String sql = "Select e from Campaign e where (e.campaignName like CONCAT('%',?0,'%') or e.active like CONCAT('%',?1,'%') or e.description like CONCAT('%',?2,'%')) and e.startTime <= ?3 and e.expiredTime >= ?4";
 					return (List<Campaign>) entityManager.createQuery(sql).setParameter(0, k).setParameter(1, k)
@@ -74,13 +79,15 @@ public class CampaignRepositoryCustomImpl implements CampaignRepositoryCustom {
 				try {
 					st = FormatDate.parseDateTime(startTime);
 				} catch (Exception e) {
-					st = new Date();
+					st = FormatDate.parseDateTime("2000-01-01 00:00:00");
 				}
 				try {
 					et = FormatDate.parseDateTime(expiredTime);
 				} catch (Exception e) {
 					et = new Date();
 				}
+				if (st == null) st = FormatDate.parseDateTime("2000-01-01 00:00:00");
+				if (et == null) et = new Date();
 				try {
 					String sql = "Select e from Campaign e where e.startTime <= ?0 and e.expiredTime >= ?1";
 					return (List<Campaign>) entityManager.createQuery(sql).setParameter(0, st).setParameter(1, et)

@@ -146,7 +146,7 @@ public class ProductController {
 			lProductDTO.add(tranferDTO(pro));
 		}
 		listProductDTO.setProducts(lProductDTO);
-		productSearchDTO.setLimit(0);
+		productSearchDTO.setLimit(Integer.MAX_VALUE);
 		productSearchDTO.setOffset(0);
 		listProductDTO.setTotalItems(productRepositoryCustomImpl.search(productSearchDTO).size());
 		return listProductDTO;

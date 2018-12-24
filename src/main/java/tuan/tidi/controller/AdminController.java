@@ -1,10 +1,12 @@
 package tuan.tidi.controller;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,6 +16,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import tuan.tidi.DTO.StatusDTO;
 import tuan.tidi.DTO.admin.SearchDTO;
+import tuan.tidi.DTO.checkout.OrderDTO;
+import tuan.tidi.DTO.checkout.OrderHistoryDTO;
+import tuan.tidi.DTO.checkout.OrderIdDTO;
+import tuan.tidi.DTO.checkout.OrderStatusDTO;
 import tuan.tidi.DTO.admin.AccountsDTO;
 import tuan.tidi.DTO.admin.BranchDTO;
 import tuan.tidi.DTO.admin.BranchIndustryDTO;
@@ -35,7 +41,9 @@ import tuan.tidi.DTO.admin.ListCategoryBranchIndustryDTO;
 import tuan.tidi.DTO.admin.ListCouponDTO;
 import tuan.tidi.DTO.admin.ListDiscountDTO;
 import tuan.tidi.DTO.admin.ListIndustryDTO;
+import tuan.tidi.DTO.admin.ListOrdersDTO;
 import tuan.tidi.DTO.admin.ListProductDTO;
+import tuan.tidi.DTO.admin.OrdersDTO;
 import tuan.tidi.DTO.admin.ProductDTO;
 import tuan.tidi.DTO.admin.ProductUpdateDTO;
 import tuan.tidi.DTO.product.ProductSearchDTO;
@@ -48,11 +56,19 @@ import tuan.tidi.entity.Category;
 import tuan.tidi.entity.Coupon;
 import tuan.tidi.entity.Discount;
 import tuan.tidi.entity.Industry;
+import tuan.tidi.entity.Orders;
+import tuan.tidi.entity.OrdersDetail;
+import tuan.tidi.entity.OrdersHistory;
 import tuan.tidi.entity.Product;
 import tuan.tidi.entity.Verification;
+import tuan.tidi.enumcustom.StatusHistory;
 import tuan.tidi.repository.account.AccountsRepository;
 import tuan.tidi.repository.account.AccountsRepositoryCustomImpl;
 import tuan.tidi.repository.account.VerificationRepository;
+import tuan.tidi.repository.checkout.OrderDetailRepository;
+import tuan.tidi.repository.checkout.OrderRepository;
+import tuan.tidi.repository.checkout.OrderRepositoryCustomImpl;
+import tuan.tidi.repository.checkout.OrdersHistoryRepository;
 import tuan.tidi.repository.product.BranchRepository;
 import tuan.tidi.repository.product.BranchRepositoryCustomImpl;
 import tuan.tidi.repository.product.BrandRepository;
@@ -140,6 +156,18 @@ public class AdminController {
 	@Autowired
 	private DiscountRepositoryCustomImpl discountRepositoryCustomImpl;
 
+	@Autowired
+	private OrdersHistoryRepository ordersHistoryRepository;
+
+	@Autowired
+	private OrderRepositoryCustomImpl orderRepositoryCustomImpl;
+
+	@Autowired
+	private OrderRepository orderRepository;
+
+	@Autowired
+	private OrderDetailRepository orderDetailRepository;
+
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTPRODUCT)
 	@ResponseBody
@@ -147,7 +175,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		product.setActive("TRUE");
 
@@ -165,7 +193,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listAccountsDTO.setStatus(statusDTO);
 			return listAccountsDTO;
 		}
@@ -175,7 +203,7 @@ public class AdminController {
 			accountsDTO.add(new AccountsDTO(acc));
 		}
 		listAccountsDTO.setAccounts(accountsDTO);
-		accountSearchDTO.setLimit(0);
+		accountSearchDTO.setLimit(Integer.MAX_VALUE);
 		accountSearchDTO.setOffset(0);
 		listAccountsDTO.setTotalItems(accountsRepositoryCustomImpl.search(accountSearchDTO).size());
 		statusDTO.setMessage("Successful");
@@ -191,7 +219,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		// check username
 		if (accountsRepository.findByUsernameLike(accounts.getUsername()) != null) {
@@ -248,7 +276,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		// check ID
 		if (accountsRepository.findById(accountsDTO.getId()) == null) {
@@ -288,7 +316,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		if (productRepository.findById(productUpdateDTO.getId()) == null) {
 			statusDTO.setMessage("ProductId has not been existed!");
@@ -309,7 +337,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 
 		Product product = productRepository.findById(productDTO.getId());
@@ -347,6 +375,19 @@ public class AdminController {
 		return productDTO;
 	}
 
+	public tuan.tidi.DTO.product.ProductDTO producttranferDTO(Product product) {
+		tuan.tidi.DTO.product.ProductDTO productDTO = new tuan.tidi.DTO.product.ProductDTO(product);
+		productDTO.setBrand(
+				new tuan.tidi.DTO.product.BrandDTO(product.getBrandId(), brandRepository.findById(product.getBrandId()).getBrandName()));
+		productDTO.setBranch(
+				new tuan.tidi.DTO.product.BranchDTO(product.getBranchId(), branchRepository.findById(product.getBranchId()).getBranchName()));
+		productDTO.setCategory(new tuan.tidi.DTO.product.CategoryDTO(product.getCategoryId(),
+				categoryRepository.findById(product.getCategoryId()).getCategoryName()));
+		productDTO.setIndustry(new tuan.tidi.DTO.product.IndustryDTO(product.getIndustryId(),
+				industryRepository.findById(product.getIndustryId()).getIndustryName()));
+		productDTO.setDiscPercent(discountRepositoryCustomImpl.findLastedDiscount(product.getId()));
+		return productDTO;
+	}
 	// get all product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETALLPRODUCT)
@@ -357,7 +398,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listProductDTO.setStatus(statusDTO);
 			return listProductDTO;
 		}
@@ -367,7 +408,7 @@ public class AdminController {
 		for (Product pro : product) {
 			lProductDTO.add(tranferDTO(pro));
 		}
-		productSearchDTO.setLimit(100);
+		productSearchDTO.setLimit(Integer.MAX_VALUE);
 		productSearchDTO.setOffset(0);
 		listProductDTO.setTotalItems(productRepositoryCustomImpl.search(productSearchDTO).size());
 		statusDTO.setMessage("Successful!");
@@ -385,7 +426,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return null;
 		Product product = productRepository.findById(productDTO.getId());
 		return tranferDTO(product);
@@ -400,7 +441,7 @@ public class AdminController {
 		ListBrandDTO listBrandDTO = new ListBrandDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listBrandDTO.setStatus(statusDTO);
 			return listBrandDTO;
 		}
@@ -408,7 +449,7 @@ public class AdminController {
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
 		listBrandDTO.setStatus(statusDTO);
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
 		searchDTO.setOffset(0);
 		listBrandDTO.setTotalItems(brandRepositoryCustomImpl.search(searchDTO).size());
 		return listBrandDTO;
@@ -422,7 +463,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		brand.setActive("TRUE");
 		brandRepository.save(brand);
@@ -439,7 +480,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		if (brandRepository.findById(brand.getId()) == null) {
 			statusDTO.setMessage("BrandId has not been existed!");
@@ -461,12 +502,12 @@ public class AdminController {
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
 		ListIndustryDTO listIndustryDTO = new ListIndustryDTO();
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listIndustryDTO.setStatus(statusDTO);
 			return listIndustryDTO;
 		}
 		listIndustryDTO.setIndustries(industryRepositoryCustomImpl.search(searchDTO));
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
 		searchDTO.setOffset(0);
 		listIndustryDTO.setTotalItems(industryRepositoryCustomImpl.search(searchDTO).size());
 		statusDTO.setMessage("Successful!");
@@ -483,7 +524,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		industry.setActive("TRUE");
 		industryRepository.save(industry);
@@ -500,7 +541,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		if (industryRepository.findById(industry.getId()) == null) {
 			statusDTO.setMessage("IndustryId has not been existed!!!");
@@ -522,7 +563,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listBranchIndustryDTO.setStatus(statusDTO);
 			return listBranchIndustryDTO;
 		}
@@ -554,7 +595,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		branch.setActive("TRUE");
 		branchRepository.save(branch);
@@ -571,7 +612,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		if (branchRepository.findById(branch.getId()) == null) {
 			statusDTO.setMessage("Branch has not been existed!!!");
@@ -594,7 +635,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listCategoryBranchIndustryDTO.setStatus(statusDTO);
 			return listCategoryBranchIndustryDTO;
 		}
@@ -614,7 +655,7 @@ public class AdminController {
 			lcategoryBranchIndustryDTO.add(categoryBranchIndustryDTO);
 		}
 		listCategoryBranchIndustryDTO.setCategories(lcategoryBranchIndustryDTO);
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
 		searchDTO.setOffset(0);
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
@@ -631,7 +672,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		category.setActive("TRUE");
 		categoryRepository.save(category);
@@ -648,7 +689,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		if (branchRepository.findById(category.getId()) == null) {
 			statusDTO.setMessage("Category has not been existed!!!");
@@ -670,12 +711,12 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listCampaignDTO.setStatus(statusDTO);
 			return listCampaignDTO;
 		}
 		listCampaignDTO.setCampaign(campaignRepositoryCustomImpl.search(searchDTO));
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
 		searchDTO.setOffset(0);
 		listCampaignDTO.setTotalItems(campaignRepositoryCustomImpl.search(searchDTO).size());
 		statusDTO.setMessage("Successful!");
@@ -692,7 +733,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 
 		// check start time and expired time
@@ -733,15 +774,15 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
-		//check campaignId
+		// check campaignId
 		if (campaignRepository.findById(campaignDTO.getId()) == null) {
 			statusDTO.setMessage("Campaign has not been existed!!!");
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}
-		
+
 		// check start time and expired time
 		if (FormatDate.parseDateTime(campaignDTO.getExpiredTime()) != null
 				|| FormatDate.parseDateTime(campaignDTO.getStartTime()) != null) {
@@ -756,20 +797,21 @@ public class AdminController {
 				checkNull = 1;
 			}
 			if (FormatDate.parseDateTime(campaignDTO.getExpiredTime()) == null) {
-				if (campaignRepository.findById(campaignDTO.getId()).getExpiredTime().compareTo(FormatDate.parseDateTime(campaignDTO.getStartTime())) < 0) {
-				statusDTO.setMessage("StartTime >= ExpiredTime!!!");
-				statusDTO.setStatus("FALSE");
-				return statusDTO;
+				if (campaignRepository.findById(campaignDTO.getId()).getExpiredTime()
+						.compareTo(FormatDate.parseDateTime(campaignDTO.getStartTime())) < 0) {
+					statusDTO.setMessage("StartTime >= ExpiredTime!!!");
+					statusDTO.setStatus("FALSE");
+					return statusDTO;
 				}
 				checkNull = 1;
 			}
 			if (checkNull == 0)
-			if (FormatDate.parseDateTime(campaignDTO.getStartTime())
-					.compareTo(FormatDate.parseDateTime(campaignDTO.getExpiredTime())) >= 0) {
-				statusDTO.setMessage("StartTime >= ExpiredTime!!!");
-				statusDTO.setStatus("FALSE");
-				return statusDTO;
-			}
+				if (FormatDate.parseDateTime(campaignDTO.getStartTime())
+						.compareTo(FormatDate.parseDateTime(campaignDTO.getExpiredTime())) >= 0) {
+					statusDTO.setMessage("StartTime >= ExpiredTime!!!");
+					statusDTO.setStatus("FALSE");
+					return statusDTO;
+				}
 		}
 		campaignRepositoryCustomImpl.updateCampaign(campaignDTO);
 		statusDTO.setMessage("Successful!");
@@ -786,7 +828,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listCouponDTO.setStatus(statusDTO);
 			return listCouponDTO;
 		}
@@ -799,8 +841,8 @@ public class AdminController {
 			lcouponDTO.add(couponDTO);
 		}
 		listCouponDTO.setCoupons(lcouponDTO);
-		searchDTO.setLimit(0);
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
+		searchDTO.setOffset(0);
 		listCouponDTO.setTotalItems(couponRepositoryCustomImpl.search(searchDTO).size());
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
@@ -817,7 +859,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		// check couponCode
 		if (couponRepository.findByCouponCodeLike(couponListProductDTO.getCouponCode()) != null) {
@@ -861,7 +903,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
 		Coupon coupon;
 		// check couponId
@@ -914,7 +956,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			listDiscountDTO.setStatus(statusDTO);
 			return listDiscountDTO;
 		}
@@ -925,8 +967,8 @@ public class AdminController {
 			ldiscountDTO.add(discountDTO);
 		}
 		listDiscountDTO.setDiscounts(ldiscountDTO);
-		searchDTO.setLimit(0);
-		searchDTO.setLimit(0);
+		searchDTO.setLimit(Integer.MAX_VALUE);
+		searchDTO.setOffset(0);
 		listDiscountDTO.setTotalItems(discountRepositoryCustomImpl.search(searchDTO).size());
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
@@ -943,7 +985,7 @@ public class AdminController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			return statusDTO;
 		}
 		// check start time expired time
@@ -969,6 +1011,11 @@ public class AdminController {
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}
+		if (Float.parseFloat(discountDTO.getPercent()) >= 1) {
+			statusDTO.setMessage("Percent >= 100% ???");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
 		// check ProductId
 		statusDTO.setMessage(null);
 		int numberProduct = discountDTO.getProductsId().size();
@@ -988,26 +1035,25 @@ public class AdminController {
 		return statusDTO;
 	}
 
-	// Update product
+	// Update discount
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEDISCOUNT)
 	@ResponseBody
-	public StatusDTO updateDiscount(@RequestBody DiscountDTO discountDTO,
-			HttpServletRequest httpServletRequest) {
+	public StatusDTO updateDiscount(@RequestBody DiscountDTO discountDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE")
+		if (statusDTO.getStatus().equals("FALSE"))
 			return statusDTO;
-		
-		//check discountId
+
+		// check discountId
 		if (discountRepository.findById(discountDTO.getId()) == null) {
 			statusDTO.setMessage("DiscountId has not been existed!!!");
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}
-		
-		//check start time and expired time
+
+		// check start time and expired time
 		if (FormatDate.parseDateTime(discountDTO.getExpiredTime()) != null
 				|| FormatDate.parseDateTime(discountDTO.getStartTime()) != null) {
 			int checkNull = 0;
@@ -1021,20 +1067,21 @@ public class AdminController {
 				checkNull = 1;
 			}
 			if (FormatDate.parseDateTime(discountDTO.getExpiredTime()) == null) {
-				if (discountRepository.findById(discountDTO.getId()).getExpiredTime().compareTo(FormatDate.parseDateTime(discountDTO.getStartTime())) < 0) {
-				statusDTO.setMessage("StartTime >= ExpiredTime!!!");
-				statusDTO.setStatus("FALSE");
-				return statusDTO;
+				if (discountRepository.findById(discountDTO.getId()).getExpiredTime()
+						.compareTo(FormatDate.parseDateTime(discountDTO.getStartTime())) < 0) {
+					statusDTO.setMessage("StartTime >= ExpiredTime!!!");
+					statusDTO.setStatus("FALSE");
+					return statusDTO;
 				}
 				checkNull = 1;
 			}
 			if (checkNull == 0)
-			if (FormatDate.parseDateTime(discountDTO.getStartTime())
-					.compareTo(FormatDate.parseDateTime(discountDTO.getExpiredTime())) >= 0) {
-				statusDTO.setMessage("StartTime >= ExpiredTime!!!");
-				statusDTO.setStatus("FALSE");
-				return statusDTO;
-			}
+				if (FormatDate.parseDateTime(discountDTO.getStartTime())
+						.compareTo(FormatDate.parseDateTime(discountDTO.getExpiredTime())) >= 0) {
+					statusDTO.setMessage("StartTime >= ExpiredTime!!!");
+					statusDTO.setStatus("FALSE");
+					return statusDTO;
+				}
 		}
 		// check productId
 		statusDTO.setMessage(null);
@@ -1045,6 +1092,194 @@ public class AdminController {
 		discountRepositoryCustomImpl.updateDiscount(discountDTO);
 		if (statusDTO.getMessage() == null)
 			statusDTO.setMessage("Successful!");
+		statusDTO.setStatus("TRUE");
+		return statusDTO;
+	}
+
+	// get all orders
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.GETORDER)
+	@ResponseBody
+	public ListOrdersDTO loadOrders(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
+		ListOrdersDTO listOrdersDTO = new ListOrdersDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String authToken = httpServletRequest.getHeader("authorization");
+		statusDTO = checkJwt.checkJWT(authToken, true);
+		if (statusDTO.getStatus().equals("FALSE")) {
+			listOrdersDTO.setStatus(statusDTO);
+			return listOrdersDTO;
+		}
+
+		// check date
+		if (searchDTO.getQuery() != null) {
+			if ((searchDTO.getQuery().getStartTime() != null) && (searchDTO.getQuery().getExpiredTime() != null)) {
+				Date st;
+				Date et;
+				try {
+					st = FormatDate.parseDateTime(searchDTO.getQuery().getStartTime());
+				} catch (Exception e) {
+					st = FormatDate.parseDateTime("2000-01-01 00:00:00");
+				}
+				try {
+					et = FormatDate.parseDateTime(searchDTO.getQuery().getExpiredTime());
+				} catch (Exception e) {
+					et = new Date();
+				}
+				if (st == null)
+					st = FormatDate.parseDateTime("2000-01-01 00:00:00");
+				if (et == null)
+					et = new Date();
+				if (st.compareTo(et) > 0) {
+					statusDTO.setMessage("startTime > expiredTime!!!");
+					statusDTO.setStatus("FALSE");
+					listOrdersDTO.setStatus(statusDTO);
+					return listOrdersDTO;
+				}
+			}
+		}
+
+		if (orderRepository.findAll() == null) {
+			statusDTO.setMessage("You dont have any orders! Continue shopping :D");
+			statusDTO.setStatus("TRUE");
+			return listOrdersDTO;
+		}
+		List<Orders> orders = orderRepositoryCustomImpl.search(searchDTO, 0);
+		List<OrdersDTO> lordersDTO = new ArrayList<OrdersDTO>();
+		if (orders == null) {
+			statusDTO.setMessage("No result");
+			statusDTO.setStatus("FALSE");
+			listOrdersDTO.setStatus(statusDTO);
+			return listOrdersDTO;
+		}
+		for (Orders ord : orders) {
+			OrdersDTO ordersDTO = new OrdersDTO(ord);
+			List<OrdersHistory> ordersHistory = ordersHistoryRepository.findByOrderId(ord.getId());
+			for (OrdersHistory orh : ordersHistory) {
+				if (ordersDTO.getDate() == null) {
+					ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
+					ordersDTO.setStatus(orh.getStatus());
+				} else {
+					if (orh.getDateTime().compareTo(FormatDate.parseDateTime(ordersDTO.getDate())) > 0) {
+						ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
+						ordersDTO.setStatus(orh.getStatus());
+					}
+				}
+			}
+			// add products
+			List<OrdersDetail> ordersDetail = orderDetailRepository.findByOrdersId(ord.getId());
+			List<tuan.tidi.DTO.product.ProductDTO> lproductDTO = new ArrayList<tuan.tidi.DTO.product.ProductDTO>();
+			for (OrdersDetail ordD : ordersDetail) {
+				Product product = productRepository.findById(ordD.getProductId());
+				tuan.tidi.DTO.product.ProductDTO productDTO = producttranferDTO(product);
+				productDTO.setAmount(ordD.getAmount());
+				productDTO.setDiscPercent(1 - ((float) ordD.getFinalPrice() / (float) ordD.getOriginalPrice()));
+				productDTO.setPrice(ordD.getOriginalPrice());
+				lproductDTO.add(productDTO);
+			}
+			ordersDTO.setProducts(lproductDTO);
+
+			// add history
+			List<OrderHistoryDTO> lorderHistoryDTO = new ArrayList<OrderHistoryDTO>();
+			for (OrdersHistory ordD : ordersHistory) {
+				lorderHistoryDTO.add(new OrderHistoryDTO(ordD));
+			}
+			ordersDTO.setHistory(lorderHistoryDTO);
+			
+			Accounts user = accountsRepository.findById(ord.getAccountsId());
+			ordersDTO.setUser(new AccountsDTO(user));
+			lordersDTO.add(ordersDTO);
+		}
+		searchDTO.setLimit(Integer.MAX_VALUE);
+		searchDTO.setOffset(0);
+		listOrdersDTO.setTotalItems(orderRepositoryCustomImpl.search(searchDTO, 0).size());
+		listOrdersDTO.setOrders(lordersDTO);
+		statusDTO.setMessage("Successful!");
+		statusDTO.setStatus("TRUE");
+		listOrdersDTO.setStatus(statusDTO);
+		return listOrdersDTO;
+	}
+
+	// get one order
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.GETANORDER)
+	@ResponseBody
+	public OrderStatusDTO loadOrder(@RequestBody OrderIdDTO orderIdDTO, HttpServletRequest httpServletRequest) {
+		OrderStatusDTO orderStatusDTO = new OrderStatusDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String authToken = httpServletRequest.getHeader("authorization");
+		statusDTO = checkJwt.checkJWT(authToken, true);
+		if (statusDTO.getStatus().equals("FALSE")) {
+			orderStatusDTO.setStatus(statusDTO);
+			return orderStatusDTO;
+		}
+
+		Orders order = orderRepository.findById(orderIdDTO.getOrderId());
+		OrderDTO orderDTO = new OrderDTO(order);
+
+		// add products
+		List<OrdersDetail> ordersDetail = orderDetailRepository.findByOrdersId(orderIdDTO.getOrderId());
+		List<tuan.tidi.DTO.product.ProductDTO> lproductDTO = new ArrayList<tuan.tidi.DTO.product.ProductDTO>();
+		for (OrdersDetail ord : ordersDetail) {
+			Product product = productRepository.findById(ord.getProductId());
+			tuan.tidi.DTO.product.ProductDTO productDTO = producttranferDTO(product);
+			productDTO.setAmount(ord.getAmount());
+			productDTO.setDiscPercent(1 - ((float) ord.getFinalPrice() / (float) ord.getOriginalPrice()));
+			productDTO.setPrice(ord.getOriginalPrice());
+			lproductDTO.add(productDTO);
+		}
+		orderDTO.setProducts(lproductDTO);
+
+		// add history
+		List<OrdersHistory> ordersHistory = ordersHistoryRepository.findByOrderId(orderIdDTO.getOrderId());
+		List<OrderHistoryDTO> lorderHistoryDTO = new ArrayList<OrderHistoryDTO>();
+		for (OrdersHistory ord : ordersHistory) {
+			lorderHistoryDTO.add(new OrderHistoryDTO(ord));
+		}
+		orderDTO.setHistory(lorderHistoryDTO);
+
+		orderStatusDTO.setOrder(orderDTO);
+		statusDTO.setMessage("Successful!");
+		statusDTO.setStatus("TRUE");
+		orderStatusDTO.setStatus(statusDTO);
+		return orderStatusDTO;
+	}
+
+	// change status orderhistory
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.UPDATEORDER)
+	@ResponseBody
+	public StatusDTO changeStatus(@RequestBody tuan.tidi.DTO.checkout.OrdersDTO ordersDTO, HttpServletRequest httpServletRequest) {
+		StatusDTO ostatusDTO = new StatusDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String authToken = httpServletRequest.getHeader("authorization");
+		statusDTO = checkJwt.checkJWT(authToken, true);
+		if (statusDTO.getStatus().equals("FALSE")) {
+			return statusDTO;
+		}
+
+		if (!ordersDTO.getStatus().equals("CHECKED") && !ordersDTO.getStatus().equals("PACKING") && !ordersDTO.getStatus().equals("SHIPPING") && !ordersDTO.getStatus().equals("SUCCESSFUL") && !ordersDTO.getStatus().equals("CANCELED")) {
+			statusDTO.setMessage("Status must be one of {CHECKED, PACKING, SHIPPING, SUCCESSFUL, CANCELED}");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
+
+		Orders order = orderRepository.findById(ordersDTO.getOrderId());
+
+		if (order == null) {
+			statusDTO.setMessage("orderId has not been existed!!!");
+			statusDTO.setStatus("FALSE");
+			return statusDTO;
+		}
+
+		order.setStatus(ordersDTO.getStatus());
+		orderRepository.save(order);
+		OrdersHistory orderHistory = new OrdersHistory();
+		orderHistory.setActive("TRUE");
+		orderHistory.setDateTime(new Date());
+		orderHistory.setOrderId(ordersDTO.getOrderId());
+		orderHistory.setStatus(ordersDTO.getStatus());
+		ordersHistoryRepository.save(orderHistory);
+		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
 		return statusDTO;
 	}

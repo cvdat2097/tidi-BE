@@ -24,6 +24,7 @@ public class JWTService {
 			JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
 			builder.claim(USERNAME, username);
 			builder.claim(PERMISSION, permission);
+			builder.claim("role", "USER");
 			builder.expirationTime(generateExpirationDate());
 			JWTClaimsSet claimsSet = builder.build();
 			SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);

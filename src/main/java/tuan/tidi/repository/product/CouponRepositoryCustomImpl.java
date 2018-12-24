@@ -164,7 +164,13 @@ public class CouponRepositoryCustomImpl implements CouponRepositoryCustom {
 	}
 
 	public List<Coupon> search(SearchDTO searchDTO) {
-		if (searchDTO.getQuery().getStartTime() == null && searchDTO.getQuery().getExpiredTime() == null) {
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
+		String startTime = null;
+		if (searchDTO.getQuery() != null) startTime = searchDTO.getQuery().getStartTime();
+		String expiredTime = null;
+		if (searchDTO.getQuery() != null) expiredTime = searchDTO.getQuery().getExpiredTime();
+		if (startTime == null && expiredTime == null) {
 			try {
 				String sql = "Select e from Coupon e";
 				return (List<Coupon>) entityManager.createQuery(sql).setMaxResults(searchDTO.getLimit())
@@ -175,15 +181,17 @@ public class CouponRepositoryCustomImpl implements CouponRepositoryCustom {
 		}
 		Date st, et;
 		try {
-			st = FormatDate.parseDateTime(searchDTO.getQuery().getStartTime());
+			st = FormatDate.parseDateTime(startTime);
 		} catch (Exception e) {
-			st = new Date();
+			st = FormatDate.parseDateTime("2000-01-01 00:00:00");
 		}
 		try {
-			et = FormatDate.parseDateTime(searchDTO.getQuery().getExpiredTime());
+			et = FormatDate.parseDateTime(expiredTime);
 		} catch (Exception e) {
 			et = new Date();
 		}
+		if (st == null) st = FormatDate.parseDateTime("2000-01-01 00:00:00");
+		if (et == null) et = new Date();
 		try {
 			String sql = "Select e from Coupon e join Campaign c on e.campaignId = c.id where c.startTime <= ?0 and c.expiredTime >= ?1";
 			return (List<Coupon>) entityManager.createQuery(sql).setParameter(0, st).setParameter(1, et)

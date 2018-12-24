@@ -1,4 +1,4 @@
-package tuan.tidi.DTO.checkout;
+package tuan.tidi.DTO.admin;
 
 import java.util.List;
 
@@ -26,5 +26,4 @@ public class ListOrdersDTO {
 	public void setStatus(StatusDTO status) {
 		this.status = status;
 	}
-	
 }

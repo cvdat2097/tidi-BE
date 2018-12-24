@@ -53,7 +53,7 @@ public abstract class API {
 	public static final String INSERTDISCOUNT = "/api/v1/admin/discount/insert";
 	public static final String UPDATEDISCOUNT = "/api/v1/admin/discount/update";
 	public static final String GETORDER = "/api/v1/admin/order/all";
-	public static final String INSERTORDER = "/api/v1/admin/order/insert";
+	public static final String GETANORDER = "/api/v1/admin/order/one";
 	public static final String UPDATEORDER = "/api/v1/admin/order/update";
 
 	public static final String GETITEM = "/api/v1/cart/all";

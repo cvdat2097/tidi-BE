@@ -7,6 +7,15 @@ public class CheckoutDTO {
 	private String address;
 	private String email;
 	private String note;
+	private String type;
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
 	public String getFullName() {
 		return fullName;
 	}

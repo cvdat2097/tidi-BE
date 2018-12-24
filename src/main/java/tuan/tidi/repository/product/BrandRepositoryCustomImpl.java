@@ -22,7 +22,8 @@ public class BrandRepositoryCustomImpl implements BrandRepositoryCustom{
 	
 	public List<Brand> search(SearchDTO searchDTO){
 		
-		String k = searchDTO.getQuery().getKeyword();
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
 		if (k != null && !k.isEmpty()) {
 			try {
 				String sql = "Select e from Brand e where e.brandName like CONCAT('%',?0,'%') or e.active like CONCAT('%',?1,'%')";

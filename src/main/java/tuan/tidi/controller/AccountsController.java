@@ -29,13 +29,13 @@ import tuan.tidi.service.CheckJWT;
 import tuan.tidi.service.HashPassword;
 import tuan.tidi.service.RandomVerificationCode;
 import tuan.tidi.jwt.JWTService;
+import tuan.tidi.mail.SendEmail;
 import tuan.tidi.repository.account.AccountsRepository;
 import tuan.tidi.repository.account.AccountsRepositoryCustomImpl;
 import tuan.tidi.repository.account.VerificationRepository;
 import tuan.tidi.repository.account.VerificationRepositoryCustomImpl;
 @Controller
 public class AccountsController {
-	
 	@Autowired
 	private AccountsRepository accountsRepository;
 	
@@ -62,6 +62,7 @@ public class AccountsController {
 	@PostMapping(API.LOGIN)
 	@ResponseBody
 	public LoginDTO login(@RequestBody Accounts accounts) {
+		System.out.println("asdoqweimasdnvuanwejasfnasfh");
 		Accounts acc;
 		LoginDTO loginDTO = new LoginDTO();
 		acc = accountsRepository.findByUsernameLike(accounts.getUsername());
@@ -74,7 +75,7 @@ public class AccountsController {
 			return loginDTO;
 		}
 		
-		if (acc.getActive() == "FALSE") {
+		if (acc.getActive().equals("FALSE")) {
 			StatusDTO statusDTO = new StatusDTO();
 			statusDTO.setStatus("FALSE");
 			statusDTO.setMessage("You has been block! Send me 50$ :v");
@@ -278,7 +279,7 @@ public class AccountsController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, false);
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			accountsDTO.setStatus(statusDTO);
 			return accountsDTO;
 		}
@@ -300,7 +301,7 @@ public class AccountsController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") return statusDTO;
+		if (statusDTO.getStatus().equals("FALSE")) return statusDTO;
 		
 		String username = jwtService.getUsernameFromToken(authToken);
 		accountsRepositoryCustomImpl.update(username, accountsDTO);
@@ -358,7 +359,7 @@ public class AccountsController {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
 		statusDTO = checkJwt.checkJWT(authToken, true);
-		if (statusDTO.getStatus() == "FALSE") return statusDTO;
+		if (statusDTO.getStatus().equals("FALSE")) return statusDTO;
 		
 		String username = jwtService.getUsernameFromToken(authToken);
 		Accounts accounts = accountsRepository.findByUsernameLike(username);
@@ -387,7 +388,7 @@ public class AccountsController {
 		statusDTO = checkJwt.checkJWT(tokenDTO.getToken(), false);
 		verifyToken.setStatus(statusDTO);
 
-		if (statusDTO.getStatus() == "FALSE") {
+		if (statusDTO.getStatus().equals("FALSE")) {
 			return verifyToken;
 		}
 		
@@ -395,5 +396,17 @@ public class AccountsController {
 		Accounts accounts = accountsRepository.findByUsernameLike(username);
 		verifyToken.setPermission(accounts.getPermission());
 		return verifyToken;
+	}
+	
+	//test send mail
+	@CrossOrigin(origins = "*")
+	@PostMapping("/sendmail")
+	public void sendmail() {
+		SendEmail sendEmail = new SendEmail();
+		try{
+			sendEmail.sendEmail("codecodecode");
+		}catch(Exception e) {
+			System.out.println("asdsadsadsadsadsdasdadsdsdsa");
+		}
 	}
 }

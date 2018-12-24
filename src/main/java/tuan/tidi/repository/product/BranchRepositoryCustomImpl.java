@@ -35,7 +35,8 @@ public class BranchRepositoryCustomImpl implements BranchRepositoryCustom{
 	}
 	
 	public List<Branch> search(SearchDTO searchDTO){
-		String k = searchDTO.getQuery().getKeyword();
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
 		if (k != null && !k.isEmpty()) {
 			try {
 				String sql = "Select e from Branch e where e.branchName like CONCAT('%',?0,'%') or e.active like CONCAT('%',?1,'%')";

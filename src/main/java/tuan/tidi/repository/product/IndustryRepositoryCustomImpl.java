@@ -20,7 +20,8 @@ public class IndustryRepositoryCustomImpl implements IndustryRepositoryCustom{
 	@Autowired 
 	private IndustryRepository industryRepository;
 	public List<Industry> search(SearchDTO searchDTO){
-		String k = searchDTO.getQuery().getKeyword();
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
 		if (k != null && !k.isEmpty()) {
 			try {
 				String sql = "Select e from Industry e where e.industryName like CONCAT('%',?0,'%') or e.active like CONCAT('%',?1,'%')";

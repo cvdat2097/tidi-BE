@@ -30,8 +30,8 @@ public class DiscountRepositoryCustomImpl implements DiscountRepositoryCustom {
 	public float findLastedDiscount(int productId) {
 		float percent = 0;
 		try {
-			String sql = "SELECT e.percent from Discount e where e.active = 'TRUE' and e.startTime = (select MAX(f.startTime) from Discount f where f.productId = ?0)";
-			percent = (float)entityManager.createQuery(sql).setParameter(0, productId).setMaxResults(1).getSingleResult();
+			String sql = "SELECT e.percent from Discount e where e.productId = ?0 and e.active = 'TRUE' and e.startTime = (select MAX(f.startTime) from Discount f where f.productId = ?1)";
+			percent = (float)entityManager.createQuery(sql).setParameter(0, productId).setParameter(1, productId).setMaxResults(1).getSingleResult();
 		}
 		catch (NoResultException e) {
 			return 0;
@@ -40,7 +40,14 @@ public class DiscountRepositoryCustomImpl implements DiscountRepositoryCustom {
 	}
 
 	public List<Discount> search(SearchDTO searchDTO){
-		if (searchDTO.getQuery().getStartTime() == null && searchDTO.getQuery().getExpiredTime() == null) {
+		String k = null;
+		if (searchDTO.getQuery() != null) k = searchDTO.getQuery().getKeyword();
+		String startTime = null;
+		if (searchDTO.getQuery() != null) startTime = searchDTO.getQuery().getStartTime();
+		String expiredTime = null;
+		if (searchDTO.getQuery() != null) expiredTime = searchDTO.getQuery().getExpiredTime();
+		
+		if (startTime == null && expiredTime == null) {
 			try {
 				String sql = "Select e from Discount e";
 				return (List<Discount>) entityManager.createQuery(sql).setMaxResults(searchDTO.getLimit())
@@ -51,12 +58,12 @@ public class DiscountRepositoryCustomImpl implements DiscountRepositoryCustom {
 		}
 		Date st, et;
 		try {
-			st = FormatDate.parseDateTime(searchDTO.getQuery().getStartTime());
+			st = FormatDate.parseDateTime(startTime);
 		} catch (Exception e) {
 			st = new Date();
 		}
 		try {
-			et = FormatDate.parseDateTime(searchDTO.getQuery().getExpiredTime());
+			et = FormatDate.parseDateTime(expiredTime);
 		} catch (Exception e) {
 			et = new Date();
 		}
@@ -78,16 +85,13 @@ public class DiscountRepositoryCustomImpl implements DiscountRepositoryCustom {
 		Set<Integer> productsId = new HashSet<Integer>(discountDTO.getProductsId());
 		for (int i : productsId) {
 			discount.setProductId(i);
+			discount.setId(discountRepository.getMaxId()+1);
 			try {
 				discountRepository.save(discount);
 			} catch(Exception e) {
 				
 			}
-			try {
-				discountRepository.save(discount);
-			} catch(Exception e) {
-				
-			}
+			
 		}
 	}
 	
