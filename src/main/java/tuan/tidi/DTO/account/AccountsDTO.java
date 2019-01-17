@@ -16,6 +16,7 @@ public class AccountsDTO {
 	private String address;
 	private String permission;
 	private String username;
+	private String emailIsVerified;
 
 	public AccountsDTO() {
 		
@@ -31,6 +32,7 @@ public class AccountsDTO {
 		this.address = accounts.getAddress();
 		this.permission = accounts.getPermission();
 		this.username = accounts.getUsername();
+		this.emailIsVerified = accounts.getIsVerified();
 	}
 	
 	public StatusDTO getStatus() {
@@ -43,6 +45,10 @@ public class AccountsDTO {
 	
 	public void setFullName(String fullName) {
 		this.fullName = fullName;
+	}
+
+	public void setEmailIsVerified(String emailIsVerified) {
+		this.emailIsVerified = emailIsVerified;
 	}
 	
 	public String getFullName() {
@@ -113,5 +119,8 @@ public class AccountsDTO {
 		this.permission = permission;
 	}
 	
+	public String getEmailIsVerified() {
+		return emailIsVerified;
+	}
 	
 }

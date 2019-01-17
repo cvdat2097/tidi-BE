@@ -10,10 +10,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import javax.persistence.criteria.Order;
 import javax.servlet.http.HttpServletRequest;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +31,8 @@ import tuan.tidi.DTO.StatusDTO;
 import tuan.tidi.DTO.admin.SearchDTO;
 import tuan.tidi.DTO.checkout.CartDetailDTO;
 import tuan.tidi.DTO.checkout.CheckoutDTO;
+import tuan.tidi.DTO.checkout.CouponDTO;
+import tuan.tidi.DTO.checkout.CouponStatusDTO;
 import tuan.tidi.DTO.checkout.ListOrdersDTO;
 import tuan.tidi.DTO.checkout.ListProductDTO;
 import tuan.tidi.DTO.checkout.OrderDTO;
@@ -71,10 +79,13 @@ import tuan.tidi.service.FormatDate;
 @Controller
 public class CheckoutController {
 
-	private final static int APPID = 376;
+	private final static int APPID = 12606;
 
-	private final static String KEY1 = "zBni6zQTcoZZaubYCWbZruJQP8pdu2FD";
+	private final static String KEY1 = "KHprobjCJn1Ohq1CwOvKAxuWs6f7iBcI";
 
+	@Autowired
+	private JmsTemplate jmsTemplate;
+	
 	@Autowired
 	private CheckJWT checkJwt;
 
@@ -126,6 +137,7 @@ public class CheckoutController {
 	// Insert product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTITEM)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public StatusDTO insertItem(@RequestBody CartDetailDTO cartDetailDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -187,6 +199,7 @@ public class CheckoutController {
 	// get all item in cart
 	@CrossOrigin(origins = "*")
 	@GetMapping(API.GETITEM)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public ListProductDTO loadItem(HttpServletRequest httpServletRequest) {
 		ListProductDTO listProductDTO = new ListProductDTO();
@@ -222,6 +235,7 @@ public class CheckoutController {
 	// update item
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEITEM)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public StatusDTO updateItem(@RequestBody CartDetailDTO cartDetailDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -272,6 +286,7 @@ public class CheckoutController {
 	// Delete item
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.DELETEITEM)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public StatusDTO deleteItem(@RequestBody CartDetailDTO cartDetailDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -299,47 +314,94 @@ public class CheckoutController {
 	}
 
 	// Checkout
+
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.CHECKOUT)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
-	public StatusDTO checkout(@RequestBody CheckoutDTO checkoutDTO, HttpServletRequest httpServletRequest) {
-		StatusDTO statusDTO = new StatusDTO();
+	public OrderIdDTO checkout(@RequestBody CheckoutDTO checkoutDTO, HttpServletRequest httpServletRequest) {
+		
+		OrderIdDTO orderIdDTO = new OrderIdDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
-		statusDTO = checkJwt.checkJWT(authToken, false);
-		if (statusDTO.getStatus().equals("FALSE"))
-			return statusDTO;
+		int orderId = orderRepository.getMaxId() + 1;
+
+		checkoutDTO.setUsername(jwtService.getUsernameFromToken(authToken));
+		checkoutDTO.setOrderId(orderId);
+		Accounts account = accountsRepository.findByUsernameLike(jwtService.getUsernameFromToken(authToken));
+		orderIdDTO.setOrderId(orderId);
+		StatusDTO status = new StatusDTO();
+		status.setMessage("");
+		status.setStatus("TRUE");
+		orderIdDTO.setStatus(status);
+		Orders order = new Orders();
+
+		order.setAccountsId(account.getId());
+		order.setActive("FALSE");
+		order.setAddress(checkoutDTO.getAddress());
+		order.setCouponId(1);
+		order.setEmail(checkoutDTO.getEmail());
+		order.setFullName(checkoutDTO.getFullName());
+		order.setNote(checkoutDTO.getNote());
+		order.setPhone(checkoutDTO.getPhone());
+		order.setStatus("");
+		order.setTotal(0);
+		order.setId(orderId);
+		order.setApptransid(FormatDate.formatDateZP(new Date()) +"-"+ String.valueOf(orderId));
+		orderRepository.save(order);
+		jmsTemplate.convertAndSend("tuanQueue", checkoutDTO);
+		return orderIdDTO;
+	}
+
+	@JmsListener(destination = "tuanQueue", containerFactory = "myFactory")
+	public void saveOder(CheckoutDTO checkoutDTO) {
+		ZPTokenDTO zPTokenDTO = checkout2(checkoutDTO);
+		Orders order = orderRepository.findById(checkoutDTO.getOrderId());
+		order.setJsonzptoken(zPTokenDTO.toString());
+		orderRepository.save(order);
+	}
+	
+	
+	public ZPTokenDTO checkout2(CheckoutDTO checkoutDTO) {
+		ZPTokenDTO zPTokenDTO = new ZPTokenDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		
 		// check null
 		if (checkoutDTO.getAddress() == null || checkoutDTO.getAddress().isEmpty()) {
 			statusDTO.setMessage("Address must be not null!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
 		if (checkoutDTO.getPhone() == null || checkoutDTO.getPhone().isEmpty()) {
 			statusDTO.setMessage("Phone must be not null!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
 		if (checkoutDTO.getEmail() == null || checkoutDTO.getEmail().isEmpty()) {
 			statusDTO.setMessage("Email must be not null!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
 		if (checkoutDTO.getFullName() == null || checkoutDTO.getFullName().isEmpty()) {
 			statusDTO.setMessage("FullName must be not null!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
-		int accountId = accountsRepository.findByUsernameLike(jwtService.getUsernameFromToken(authToken)).getId();
+		int accountId = accountsRepository.findByUsernameLike(checkoutDTO.getUsername()).getId();
 		// check cart
 		List<Cart> cart = cartRepository.findByAccountsId(accountId);
 		if (cart == null || cart.isEmpty()) {
 			statusDTO.setMessage("Your cart is empty! Continue shopping :D");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 		Coupon coupon = new Coupon();
 		if (checkoutDTO.getCouponCode() != null && !checkoutDTO.getCouponCode().isEmpty())
@@ -352,24 +414,39 @@ public class CheckoutController {
 		if (coupon == null) {
 			statusDTO.setMessage("Coupon is wrong!!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 		if (coupon.getActive().equals("FALSE")) {
 			statusDTO.setMessage("Coupon is expired!!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 		if (coupon.getAmount() == 0) {
 			statusDTO.setMessage("Coupon has run out!!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
-		ListProductDTO listProductDTO = loadItem(httpServletRequest);
+		Accounts account = accountsRepository.findByUsernameLike(checkoutDTO.getUsername());
+		List<Cart> cartt = cartRepository.findByAccountsId(account.getId());
+		if (cart == null || cart.isEmpty()) {
+			statusDTO.setMessage("Your cart is empty! Continue shopping :D");
+			statusDTO.setStatus("TRUE");
+		}
+		List<ProductDTO> listProductDTO = new ArrayList<ProductDTO>();
+		for (Cart car : cartt) {
+			Product pro = productRepository.findById(car.getProductId());
+			ProductDTO proDTO = tranferDTO(pro);
+			proDTO.setAmount(car.getAmount());
+			listProductDTO.add(proDTO);
+		}
 		int total = 0;
 		// check products in cart
 		statusDTO.setMessage("");
-		for (ProductDTO pro : listProductDTO.getProducts()) {
+		for (ProductDTO pro : listProductDTO) {
 			Product product = productRepository.findById(pro.getId());
 			if (product.getActive().equals("FALSE"))
 				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " has been block!!!\n");
@@ -381,7 +458,8 @@ public class CheckoutController {
 		}
 		if (statusDTO.getMessage() != "") {
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
 
 		if (total >= coupon.getThreshold())
@@ -389,19 +467,21 @@ public class CheckoutController {
 		else {
 			statusDTO.setMessage("Total < Threshold!!!");
 			statusDTO.setStatus("FALSE");
-			return statusDTO;
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
 		}
-		int orderId = orderRepository.getMaxId() + 1;
+		int orderId = checkoutDTO.getOrderId();
+		Orders order = orderRepository.findById(orderId);
+
 		// ZALOPAY :D
 		String zPToken = "";
-		String apptransid = "";
-		if (checkoutDTO.getType().equals("ZaloPay")) {
-			apptransid = FormatDate.formatDate(new Date()) + String.valueOf(zPToken);
-			JSONObject embedata = new JSONObject();
-			embedata.put("userId", accountId);
-			embedata.put("orderId", orderId);
+		String apptransid = order.getApptransid();
+		if (checkoutDTO.getShippingMethod() != null && checkoutDTO.getShippingMethod().equals("ZaloPay")) {
+			JSONObject embeddata = new JSONObject();
+			embeddata.put("userId", accountId);
+			embeddata.put("orderId", orderId);
 			List<JSONObject> item = new ArrayList<JSONObject>();
-			for (ProductDTO pro : listProductDTO.getProducts()) {
+			for (ProductDTO pro : listProductDTO) {
 				JSONObject obj = new JSONObject();
 				Product product = productRepository.findById(pro.getId());
 				obj.put("id", pro.getId());
@@ -410,10 +490,25 @@ public class CheckoutController {
 				obj.put("amount", pro.getAmount());
 				item.add(obj);
 			}
-			String mac = HMACUtil.HMacHexStringEncode("HmacSHA256", KEY1, item.toString());
-
-			zPToken = createOrderZP(APPID, String.valueOf(orderId), System.currentTimeMillis() / 1L,
-					Long.valueOf(total), apptransid, embedata.toString(), item.toString(), "Mua hang TIDI", mac);
+			Long apptime = System.currentTimeMillis() / 1L;
+			String embe = embeddata.toString();
+			String ite = item.toString();
+			//embe = embe.replace("\"", "\\\"");
+			//ite = ite.replace("\"", "\\\"");
+			String macFormat = "%s|%s|%s|%s|%s|%s|%s";
+			String macData = String.format(macFormat, String.valueOf(APPID) ,apptransid ,String.valueOf(accountId), String.valueOf(total) , apptime ,embe ,ite);
+			System.out.println(macData);
+			String mac = HMACUtil.HMacHexStringEncode("HmacSHA256", KEY1, macData);
+			String JSONzPToken = createOrderZP(APPID, String.valueOf(accountId), apptime,
+					Long.valueOf(total), apptransid, embe, ite, "Mua hang TIDI", mac);
+			System.out.println(JSONzPToken);
+			JSONObject ob;
+			try{
+				ob = new JSONObject(JSONzPToken);
+				zPToken = ob.getString("zptranstoken");
+			}catch(Exception e){
+				
+			}
 
 		}
 		// if (zPToken.isEmpty()) return;
@@ -423,14 +518,13 @@ public class CheckoutController {
 				coupon.setAmount(coupon.getAmount() - 1);
 
 		// subtract product amount
-		for (ProductDTO pro : listProductDTO.getProducts()) {
+		for (ProductDTO pro : listProductDTO) {
 			Product product = productRepository.findById(pro.getId());
 			product.setAmount(product.getAmount() - pro.getAmount());
 			productRepository.save(product);
 		}
 
 		// insert order
-		Orders order = new Orders();
 		order.setAccountsId(accountId);
 		order.setActive("TRUE");
 		order.setAddress(checkoutDTO.getAddress());
@@ -439,19 +533,18 @@ public class CheckoutController {
 		order.setFullName(checkoutDTO.getFullName());
 		order.setNote(checkoutDTO.getNote());
 		order.setPhone(checkoutDTO.getPhone());
-		if (checkoutDTO.getType().equals("ZaloPay")) {
-			order.setStatus("PADDING");
+		if (checkoutDTO.getShippingMethod().equals("ZaloPay")) {
+			order.setStatus("PENDING");
 			order.setActive("FALSE");
 		} else
 			order.setStatus("CHECKED");
 		order.setZalopayToken(zPToken);
 		order.setTotal(total);
-		order.setId(orderId);
 		order.setApptransid(apptransid);
 		orderRepository.save(order);
 
 		// insert orderDetails
-		for (ProductDTO pro : listProductDTO.getProducts()) {
+		for (ProductDTO pro : listProductDTO) {
 			OrdersDetail ordersDetail = new OrdersDetail();
 			Product product = productRepository.findById(pro.getId());
 			ordersDetail.setActive("TRUE");
@@ -478,8 +571,8 @@ public class CheckoutController {
 		ordershistory.setActive("TRUE");
 		ordershistory.setDateTime(new Date());
 		ordershistory.setOrderId(orderId);
-		if (checkoutDTO.getType().equals("ZaloPay")) {
-			ordershistory.setStatus("PADDING");
+		if (checkoutDTO.getShippingMethod() != null && checkoutDTO.getShippingMethod().equals("ZaloPay")) {
+			ordershistory.setStatus("PENDING");
 		} else
 			ordershistory.setStatus("CHECKED");
 		ordersHistoryRepository.save(ordershistory);
@@ -489,12 +582,36 @@ public class CheckoutController {
 
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
-		return statusDTO;
+		zPTokenDTO.setOrderId(String.valueOf(orderId));
+		zPTokenDTO.setZptranstoken(zPToken);
+		zPTokenDTO.setStatus(statusDTO);
+		return zPTokenDTO;
 	}
-
+	
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.CHECKORDER)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+	@ResponseBody
+	public ZPTokenDTO checkorder(@RequestBody OrderIdDTO orderId) {
+		ZPTokenDTO zPTokenDTO = new ZPTokenDTO();
+		StatusDTO statusDTO = new StatusDTO();
+		String s = orderRepository.findById(orderId.getOrderId()).getJsonzptoken();
+		if (s.isEmpty()) {
+			statusDTO.setStatus("PROCESSING");
+			zPTokenDTO.setStatus(statusDTO);
+			return zPTokenDTO;
+		}
+		JSONObject obj = new JSONObject(s);
+		zPTokenDTO.setZptranstoken(obj.getString("zptranstoken"));
+		statusDTO.setStatus("TRUE");
+		zPTokenDTO.setStatus(statusDTO);
+		return zPTokenDTO;
+	}
+	
 	// get all orders
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETORDERS)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public ListOrdersDTO loadOrders(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListOrdersDTO listOrdersDTO = new ListOrdersDTO();
@@ -559,15 +676,12 @@ public class CheckoutController {
 		for (Orders ord : orders) {
 			OrdersDTO ordersDTO = new OrdersDTO(ord);
 			List<OrdersHistory> ordersHistory = ordersHistoryRepository.findByOrderId(ord.getId());
+			int historyId = 0;
 			for (OrdersHistory orh : ordersHistory) {
-				if (ordersDTO.getDate() == null) {
+				if (orh.getId() > historyId) {
 					ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
 					ordersDTO.setStatus(orh.getStatus());
-				} else {
-					if (orh.getDateTime().compareTo(FormatDate.parseDateTime(ordersDTO.getDate())) > 0) {
-						ordersDTO.setDate(FormatDate.formatDateTime(orh.getDateTime()));
-						ordersDTO.setStatus(orh.getStatus());
-					}
+					historyId = orh.getId();
 				}
 			}
 			lordersDTO.add(ordersDTO);
@@ -585,6 +699,7 @@ public class CheckoutController {
 	// get one orders
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETONEORDER)
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public OrderStatusDTO getOneOrder(@RequestBody OrderIdDTO orderIdDTO, HttpServletRequest httpServletRequest) {
 		OrderStatusDTO orderStatusDTO = new OrderStatusDTO();
@@ -673,6 +788,9 @@ public class CheckoutController {
 		}
 		returnCallbackDTO.setReturncode(1);
 		returnCallbackDTO.setReturnmessage("Successful!");
+		System.out.println("\n\n");
+		System.out.println(zaloPayCallback.toString());
+		System.out.println("\n\n");
 		return returnCallbackDTO;
 	}
 
@@ -687,12 +805,17 @@ public class CheckoutController {
 	// create order zalopay
 	public String createOrderZP(@RequestBody int appid, String appuser, Long apptime, Long amount, String apptransid,
 			String embeddata, String item, String description, String mac) {
+		
 		String urlParameters = "appid=" + String.valueOf(appid) + "&appuser=" + appuser + "&apptime="
 				+ String.valueOf(apptime) + "&amount=" + String.valueOf(amount) + "&apptransid=" + apptransid
-				+ "&embeddata=" + embeddata + "&item=" + item + "&description" + description + "&mac=" + mac;
+				+ "&embeddata=" + embeddata + "&item=" + item + "&description=" + description + "&mac=" + mac;
+		
+		System.out.println("\n\n========================================================\n\n\n");
+		System.out.println(urlParameters);
+		
 		byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
 		int postDataLength = postData.length;
-		String request = "https://sandbox.zalopay.com.vn/v001/tpe/createorder";
+		String request = API.ZALOPAY;
 		String data = "";
 		try {
 			// create connection
@@ -719,8 +842,9 @@ public class CheckoutController {
 			}
 
 		} catch (Exception e) {
-
+			System.out.println("asdsadsadasdsadsadsa" + e);
 		}
+		System.out.println(data);
 		return data;
 	}
 
@@ -761,12 +885,14 @@ public class CheckoutController {
 			zaloPayStatusDTO.setStatus("FALSE");
 			return zaloPayStatusDTO;
 		}
-		HMACUtil.HMacHexStringEncode("HmacSHA256", KEY1,
-				String.valueOf(APPID) + "|" + order.getApptransid() + "|" + KEY1);
-		String urlParameters = "appid=" + String.valueOf(APPID) + "&apptransid=" + order.getApptransid() + "&mac=";
+		String contentFormat = "%s|%s|%s";
+		String contentData = String.format(contentFormat, String.valueOf(APPID), order.getApptransid(), KEY1);
+		String mac = HMACUtil.HMacHexStringEncode("HmacSHA256", KEY1, contentData);
+		String urlParameters = "appid=" + String.valueOf(APPID) + "&apptransid=" + order.getApptransid() + "&mac=" + mac;
+		System.out.println(urlParameters);
 		byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
 		int postDataLength = postData.length;
-		String request = "https://sandbox.zalopay.com.vn/v001/tpe/getstatusbyapptransid";
+		String request = API.ZALOPAYSTATUS;
 		String data = "";
 		try {
 			// create connection
@@ -792,7 +918,7 @@ public class CheckoutController {
 				data += (char) c;
 			}
 			JSONObject obj = new JSONObject(data);
-			if (obj.getBoolean("isprocessing") == true) {
+			if (obj.getBoolean("isprocessing") == true || obj.getInt("returncode") == -49) {
 				zaloPayStatusDTO.setStatus("PROCESSING");
 				return zaloPayStatusDTO;
 			}
@@ -811,6 +937,8 @@ public class CheckoutController {
 					return zaloPayStatusDTO;
 				}
 				else {
+					System.out.println("++++++++++++++++++++++++++++++++++++++++++++++");
+					System.out.println(obj.toString());
 					zaloPayStatusDTO.setStatus("CANCELED");
 					order.setStatus("CANCELED");
 					OrdersHistory ordersHistory = new OrdersHistory();
@@ -833,5 +961,30 @@ public class CheckoutController {
 
 		}
 		return zaloPayStatusDTO;
+	}
+	
+	@CrossOrigin(origins = "*")
+	@PostMapping(API.CHECKCOUPON)
+	@ResponseBody
+	public CouponStatusDTO checkCoupon(@RequestBody CouponDTO couponDTO) {
+		CouponStatusDTO couponStatusDTO = new CouponStatusDTO();
+		Coupon coupon = couponRepository.findByCouponCodeLike(couponDTO.getCoupon());
+		if (coupon == null) {
+			couponStatusDTO.setMessage("CouponCode is incorrect!!!");
+			couponStatusDTO.setStatus(-1);
+			return couponStatusDTO;
+		}
+		
+		if (coupon.getActive().equals("FALSE")) {
+			couponStatusDTO.setMessage("CouponCode has been expired!!!");
+			couponStatusDTO.setStatus(0);
+			return couponStatusDTO;
+		}
+		
+		couponStatusDTO.setDiscPercent(coupon.getPercent());
+		couponStatusDTO.setMoney(coupon.getMoney());
+		couponStatusDTO.setMessage("OK!!!");
+		couponStatusDTO.setStatus(1);
+		return couponStatusDTO;
 	}
 }

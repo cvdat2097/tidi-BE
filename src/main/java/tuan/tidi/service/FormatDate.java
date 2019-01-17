@@ -43,4 +43,22 @@ public abstract class FormatDate {
 			return null;
 		}
 	}
+	public static String formatDateZP(Date date) {
+		try {
+			SimpleDateFormat f = new SimpleDateFormat("yyMMdd");
+			return f.format(date);
+		}
+		catch(Exception e){
+			return null;
+		}
+	}
+	public static Date parseDateZP(String date) {
+		try {
+			SimpleDateFormat f = new SimpleDateFormat("yyMMdd");
+			return f.parse(date);
+		}
+		catch(Exception e){
+			return null;
+		}
+	}
 }

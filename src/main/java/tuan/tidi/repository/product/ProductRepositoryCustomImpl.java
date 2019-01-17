@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
+import org.hibernate.search.jpa.FullTextEntityManager;
+import org.hibernate.search.query.dsl.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +21,8 @@ import tuan.tidi.entity.Product;
 @Repository
 public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 
+	@Autowired
+	EntityManagerFactory entityManagerFactory;
 	@Autowired
 	private EntityManager entityManager;
 	@Autowired
@@ -124,9 +129,38 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 		List<Product> product = new ArrayList<Product>();
 
 		String sql = "Select e from Product e ";
+
 		int kt = 0;
 		int d = 0;
 		if (productSearchDTO.getQuery() != null) {
+			if (productSearchDTO.getQuery().getKeyword()!= null && !productSearchDTO.getQuery().getKeyword().isEmpty()) {
+				
+				FullTextEntityManager fullTextEntityManager =
+				    org.hibernate.search.jpa.Search.getFullTextEntityManager(entityManager);
+				try{
+					fullTextEntityManager.createIndexer().startAndWait();
+				}catch(Exception e) {
+					
+				}
+				// create native Lucene query unsing the query DSL
+				// alternatively you can write the Lucene query using the Lucene query parser
+				// or the Lucene programmatic API. The Hibernate Search DSL is recommended though
+				QueryBuilder qb = fullTextEntityManager.getSearchFactory()
+				    .buildQueryBuilder().forEntity(Product.class).get();
+				org.apache.lucene.search.Query luceneQuery = qb
+				  .keyword()
+				  .onFields("productName")
+				  .matching(productSearchDTO.getQuery().getKeyword())
+				  .createQuery();
+
+				// wrap Lucene query in a javax.persistence.Query
+				org.hibernate.search.jpa.FullTextQuery jpaQuery =
+				    fullTextEntityManager.createFullTextQuery(luceneQuery, Product.class);
+
+				// execute search
+				List<Product> productt =  (List<Product>) jpaQuery.getResultList();
+				return productt;
+			}
 			if (productSearchDTO.getQuery().getBrandId() != 0) {
 				if (kt == 1) {
 					sql += "and ";
@@ -167,17 +201,6 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 				sql += "e.categoryId = ?" + d + " ";
 				d++;
 			}
-			if (productSearchDTO.getQuery().getKeyword() != null
-					&& !productSearchDTO.getQuery().getKeyword().isEmpty()) {
-				if (kt == 1) {
-					sql += "and ";
-				} else {
-					sql += "where ";
-				}
-				kt = 1;
-				sql += "e.productName like CONCAT('%',?" + d + ",'%') ";
-			}
-
 			Query query = entityManager.createQuery(sql);
 			d = 0;
 			if (productSearchDTO.getQuery().getBrandId() != 0) {
@@ -194,11 +217,6 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 			}
 			if (productSearchDTO.getQuery().getCategoryId() != 0) {
 				query.setParameter(d, productSearchDTO.getQuery().getCategoryId());
-				d++;
-			}
-			if (productSearchDTO.getQuery().getKeyword() != null
-					&& !productSearchDTO.getQuery().getKeyword().isEmpty()) {
-				query.setParameter(d, productSearchDTO.getQuery().getKeyword());
 				d++;
 			}
 

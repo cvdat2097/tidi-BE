@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.EnumUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,7 +62,6 @@ import tuan.tidi.entity.OrdersDetail;
 import tuan.tidi.entity.OrdersHistory;
 import tuan.tidi.entity.Product;
 import tuan.tidi.entity.Verification;
-import tuan.tidi.enumcustom.StatusHistory;
 import tuan.tidi.repository.account.AccountsRepository;
 import tuan.tidi.repository.account.AccountsRepositoryCustomImpl;
 import tuan.tidi.repository.account.VerificationRepository;
@@ -170,6 +170,7 @@ public class AdminController {
 
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTPRODUCT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertProduct(@RequestBody Product product, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -186,6 +187,7 @@ public class AdminController {
 	// search account
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETACCOUNTS)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListAccountsDTO searchAccounts(@RequestBody SearchDTO accountSearchDTO,
 			HttpServletRequest httpServletRequest) {
@@ -214,6 +216,7 @@ public class AdminController {
 
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.CREATEACCOUNTS)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO createAccounts(@RequestBody Accounts accounts, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -271,6 +274,7 @@ public class AdminController {
 
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEACCOUNTS)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateAccounts(@RequestBody AccountsDTO accountsDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -310,6 +314,7 @@ public class AdminController {
 	// update product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEPRODUCT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateProduct(@RequestBody ProductUpdateDTO productUpdateDTO,
 			HttpServletRequest httpServletRequest) {
@@ -332,6 +337,7 @@ public class AdminController {
 	// delete product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.DELETEPRODUCT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO deleteProduct(@RequestBody ProductDTO productDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -391,6 +397,7 @@ public class AdminController {
 	// get all product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETALLPRODUCT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListProductDTO searchProduct(@RequestBody ProductSearchDTO productSearchDTO,
 			HttpServletRequest httpServletRequest) {
@@ -421,6 +428,7 @@ public class AdminController {
 	// get one product
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETONEPRODUCT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ProductDTO loadProduct(@RequestBody ProductDTO productDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -435,6 +443,7 @@ public class AdminController {
 	// get all brand
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETBRAND)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListBrandDTO loadBrand(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -458,6 +467,7 @@ public class AdminController {
 	// insert brand
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTBRAND)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertBrand(@RequestBody Brand brand, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -475,6 +485,7 @@ public class AdminController {
 	// update brand
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEBRAND)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateBrand(@RequestBody Brand brand, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -496,6 +507,7 @@ public class AdminController {
 	// get all industries
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETINDUSTRY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListIndustryDTO loadIndustry(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -519,6 +531,7 @@ public class AdminController {
 	// insert industry
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTINDUSTRY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertIndustry(@RequestBody Industry industry, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -536,6 +549,7 @@ public class AdminController {
 	// update industry
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEINDUSTRY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateIndustry(@RequestBody Industry industry, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -557,6 +571,7 @@ public class AdminController {
 	// get all branches
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETBRANCH)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListBranchIndustryDTO loadBranch(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListBranchIndustryDTO listBranchIndustryDTO = new ListBranchIndustryDTO();
@@ -590,6 +605,7 @@ public class AdminController {
 	// insert branch
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTBRANCH)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertBranch(@RequestBody Branch branch, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -607,6 +623,7 @@ public class AdminController {
 	// update Branch
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEBRANCH)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateBranch(@RequestBody Branch branch, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -628,6 +645,7 @@ public class AdminController {
 	// Get all categories
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETCATEGORY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListCategoryBranchIndustryDTO loadCategory(@RequestBody SearchDTO searchDTO,
 			HttpServletRequest httpServletRequest) {
@@ -667,6 +685,7 @@ public class AdminController {
 	// insert category
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTCATEGORY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertCategory(@RequestBody Category category, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -684,6 +703,7 @@ public class AdminController {
 	// update Category
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATECATEGORY)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateCategory(@RequestBody Category category, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -705,6 +725,7 @@ public class AdminController {
 	// Get all campaign
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETCAMPAIGN)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListCampaignDTO loadCampaign(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListCampaignDTO listCampaignDTO = new ListCampaignDTO();
@@ -728,6 +749,7 @@ public class AdminController {
 	// insert campaign
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTCAMPAIGN)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertCampaign(@RequestBody CampaignDTO campaignDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -769,6 +791,7 @@ public class AdminController {
 	// update Campaign
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATECAMPAIGN)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateCampaign(@RequestBody CampaignDTO campaignDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -822,6 +845,7 @@ public class AdminController {
 	// get all coupon
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETCOUPON)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListCouponDTO loadCoupon(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListCouponDTO listCouponDTO = new ListCouponDTO();
@@ -853,6 +877,7 @@ public class AdminController {
 	// Insert coupon
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTCOUPON)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertCoupon(@RequestBody CouponListProductDTO couponListProductDTO,
 			HttpServletRequest httpServletRequest) {
@@ -897,6 +922,7 @@ public class AdminController {
 	// Update Coupon
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATECOUPON)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateCoupon(@RequestBody CouponListProductDTO couponListProductDTO,
 			HttpServletRequest httpServletRequest) {
@@ -950,6 +976,7 @@ public class AdminController {
 	// get all discounts
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETDISCOUNT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListDiscountDTO loadDiscount(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListDiscountDTO listDiscountDTO = new ListDiscountDTO();
@@ -979,6 +1006,7 @@ public class AdminController {
 	// insert discount
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INSERTDISCOUNT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO insertDiscount(@RequestBody DiscountListProductDTO discountDTO,
 			HttpServletRequest httpServletRequest) {
@@ -1038,6 +1066,7 @@ public class AdminController {
 	// Update discount
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEDISCOUNT)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO updateDiscount(@RequestBody DiscountDTO discountDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -1099,6 +1128,7 @@ public class AdminController {
 	// get all orders
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETORDER)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public ListOrdersDTO loadOrders(@RequestBody SearchDTO searchDTO, HttpServletRequest httpServletRequest) {
 		ListOrdersDTO listOrdersDTO = new ListOrdersDTO();
@@ -1202,6 +1232,7 @@ public class AdminController {
 	// get one order
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.GETANORDER)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public OrderStatusDTO loadOrder(@RequestBody OrderIdDTO orderIdDTO, HttpServletRequest httpServletRequest) {
 		OrderStatusDTO orderStatusDTO = new OrderStatusDTO();
@@ -1247,6 +1278,7 @@ public class AdminController {
 	// change status orderhistory
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEORDER)
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseBody
 	public StatusDTO changeStatus(@RequestBody tuan.tidi.DTO.checkout.OrdersDTO ordersDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO ostatusDTO = new StatusDTO();

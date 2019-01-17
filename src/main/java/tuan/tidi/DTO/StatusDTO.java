@@ -20,5 +20,10 @@ public class StatusDTO {
 		this.message = message;
 	}
 	
+	@Override
+	public String toString() {
+		
+		return "{\"status\":\""+status+"\",\"message\":\""+message+"\"}";
+	}
 	
 }

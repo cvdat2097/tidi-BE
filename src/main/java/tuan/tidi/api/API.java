@@ -1,6 +1,8 @@
 package tuan.tidi.api;
 
 public abstract class API {
+	public static final String HOST = "localhost:3000";
+	
 	public static final String API = "/api/v1";
 	
 	public static final String AUTH = "/api/v1/auth";
@@ -62,7 +64,12 @@ public abstract class API {
 	public static final String DELETEITEM = "/api/v1/cart/delete";
 
 	public static final String CHECKOUT = "/api/v1/checkout/checkout";
+	public static final String CHECKORDER = "/api/v1/checkout/checkorder";
 	public static final String GETORDERS = "/api/v1/checkout/all";
 	public static final String GETONEORDER = "/api/v1/checkout/one";
+	public static final String CHECKCOUPON = "/api/v1/checkout/couponStatus";
 
+	public static final String ZALOPAYSTATUS = "https://sandboxqc.zalopay.com.vn/v001/tpe/getstatusbyapptransid";
+	public static final String ZALOPAY = "https://sandboxqc.zalopay.com.vn/v001/tpe/createorder";
+	
 }

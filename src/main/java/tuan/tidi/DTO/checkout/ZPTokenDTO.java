@@ -5,8 +5,17 @@ import tuan.tidi.DTO.StatusDTO;
 public class ZPTokenDTO {
 	private String zptranstoken;
 	private StatusDTO status;
+	private String orderId;
 	public StatusDTO getStatus() {
 		return status;
+	}
+
+	public String getOrderId() {
+		return orderId;
+	}
+
+	public void setOrderId(String orderId) {
+		this.orderId = orderId;
 	}
 
 	public void setStatus(StatusDTO status) {
@@ -19,6 +28,12 @@ public class ZPTokenDTO {
 
 	public void setZptranstoken(String zptranstoken) {
 		this.zptranstoken = zptranstoken;
+	}
+	
+	@Override
+	public String toString() {
+		
+		return "{\"zptranstoken\":\""+zptranstoken+"\",\"orderId\":\""+orderId+"\",\"status\":"+(status==null? "null" : status.toString())+"}";
 	}
 	
 }

@@ -19,4 +19,8 @@ public class ZaloPayCallback {
 		this.mac = mac;
 	}
 	
+	@Override
+	public String toString() {
+		return "mac: " + mac +" ---- data " + data;
+	}
 }

@@ -3,9 +3,15 @@
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 @Service
 public class HashPassword{
+        
+    @Autowired
+	private BCryptPasswordEncoder bcryptEncoder;
+    
     public String hash(String password) {
         String generatedPassword = null;
         try {
@@ -24,4 +30,8 @@ public class HashPassword{
         System.out.println(generatedPassword);
         return generatedPassword;
     }
+    
+//    public String hash(String password) {
+//        return bcryptEncoder.encode(password);
+//    }
 }

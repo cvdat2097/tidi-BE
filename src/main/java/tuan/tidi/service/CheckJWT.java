@@ -22,14 +22,14 @@ public class CheckJWT {
 		}
 
 		//check token expired
-		if(jwtService.isTokenExpired(authToken)) {
-			statusDTO.setMessage("Expired!!!");
-			statusDTO.setStatus("FALSE");
-			return statusDTO;
-		}
+//		if(jwtService.isTokenExpired(authToken)) {
+//			statusDTO.setMessage("Expired!!!");
+//			statusDTO.setStatus("FALSE");
+//			return statusDTO;
+//		}
 		//check admin permissionjwtService.getPermission(authToken)
-		if(!jwtService.getPermission(authToken).equals("ADMIN") && checkAdmin == true) {
-			statusDTO.setMessage("You must an admin!!!");
+		if(checkAdmin == true && !jwtService.getPermission(authToken).equals("ROLE_ADMIN")) {
+			statusDTO.setMessage("You must be an admin!!!");
 			statusDTO.setStatus("FALSE");
 			return statusDTO;
 		}	

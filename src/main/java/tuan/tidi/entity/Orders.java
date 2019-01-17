@@ -51,6 +51,17 @@ public class Orders {
 	@Column(name = "apptransid")
 	private String apptransid;
 
+	@Column(name = "jsonzptoken")
+	private String jsonzptoken;
+	
+	public String getJsonzptoken() {
+		return jsonzptoken;
+	}
+
+	public void setJsonzptoken(String jsonzptoken) {
+		this.jsonzptoken = jsonzptoken;
+	}
+
 	public String getApptransid() {
 		return apptransid;
 	}

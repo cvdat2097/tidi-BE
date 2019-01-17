@@ -7,13 +7,32 @@ public class CheckoutDTO {
 	private String address;
 	private String email;
 	private String note;
-	private String type;
-	public String getType() {
-		return type;
+	private String shippingMethod;
+	private String username;
+	private int orderId;
+
+	public int getOrderId() {
+		return orderId;
 	}
 
-	public void setType(String type) {
-		this.type = type;
+	public void setOrderId(int orderId) {
+		this.orderId = orderId;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getShippingMethod() {
+		return shippingMethod;
+	}
+
+	public void setShippingMethod(String shippingMethod) {
+		this.shippingMethod = shippingMethod;
 	}
 
 	public String getFullName() {
@@ -63,5 +82,19 @@ public class CheckoutDTO {
 	public void setCouponCode(String couponCode) {
 		this.couponCode = couponCode;
 	}
-	
+
+	@Override
+	public String toString() {
+		String address = (this.address == null) ? "\"address\":" + this.address + "" : "\"address\":\"" + this.address + "\"";
+		String phone = (this.phone == null) ? "\"phone\":" + this.phone + "" : "\"phone\":\"" + this.phone + "\"";
+		String fullName = (this.fullName == null) ? "\"fullName\":" + this.fullName + "" : "\"fullName\":\"" + this.fullName + "\"";
+		String couponCode = (this.couponCode == null) ? "\"couponCode\":" + this.couponCode + "" : "\"couponCode\":\"" + this.couponCode + "\"";
+		String email = (this.email == null) ? "\"email\":" + this.email + "" : "\"email\":\"" + this.email + "\"";
+		String note = (this.note == null) ? "\"note\":" + this.note + "" : "\"note\":\"" + this.note + "\"";
+		String shippingMethod = (this.shippingMethod == null) ? "\"shippingMethod\":" + this.shippingMethod + "" : "\"shippingMethod\":\"" + this.shippingMethod + "\"";
+		String username = (this.username == null) ? "\"username\":" + this.username + "" : "\"username\":\"" + this.username + "\"";
+
+		
+		return "{" + address + "," + phone + ","+ fullName + ","+ couponCode + ","+ email + ","+ note + ","+ shippingMethod + ","+ username + "}";
+	}
 }

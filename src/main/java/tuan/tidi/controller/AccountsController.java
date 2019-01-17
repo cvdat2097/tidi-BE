@@ -6,8 +6,10 @@ import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -62,7 +64,6 @@ public class AccountsController {
 	@PostMapping(API.LOGIN)
 	@ResponseBody
 	public LoginDTO login(@RequestBody Accounts accounts) {
-		System.out.println("asdoqweimasdnvuanwejasfnasfh");
 		Accounts acc;
 		LoginDTO loginDTO = new LoginDTO();
 		acc = accountsRepository.findByUsernameLike(accounts.getUsername());
@@ -168,15 +169,15 @@ public class AccountsController {
 		//create new code
 		Accounts account = accountsRepository.findByUsernameLike(accounts.getUsername());
 		RandomVerificationCode rand = new RandomVerificationCode();
-		Verification verification = new Verification(account.getId(), rand.randomCode() + Integer.toString(account.getId()), "EMAIL", "TRUE");
+		String code = rand.randomCode() + Integer.toString(account.getId());
+		Verification verification = new Verification(account.getId(), code, "EMAIL", "TRUE");
 		verificationRepository.save(verification);
 		
-		/*SendEmail sendEmail = new SendEmail();
-		try{
-			sendEmail.sendEmail();
-		}catch(Exception e) {
-			
-		}*/
+		SendEmail sendEmail = new SendEmail();
+		sendEmail.setTo(registerDTO.getEmail());
+		sendEmail.setCode(code);
+		sendEmail.setLink("http://"+API.HOST+ "?email=" + code);
+		new Thread(sendEmail).start();
 		statusDTO.setStatus("TRUE");
 		statusDTO.setMessage("Successful");
 		loginDTO.setStatus(statusDTO);
@@ -187,14 +188,16 @@ public class AccountsController {
 	
 	//Registration email verification
 	@CrossOrigin(origins = "*")
-	@PostMapping(API.EMAILVERIFICATION)
+	@GetMapping(API.EMAILVERIFICATION)
 	@ResponseBody
-	public StatusDTO emailVerification(@RequestBody VerificationDTO verificationDTO){
-		Verification verification = verificationRepositoryCustomImpl.findCodeType(verificationDTO.getVerificationCode(), "EMAIL");
+	public StatusDTO emailVerification(HttpServletRequest request){
+		String verificationCode = request.getParameter("verificationCode");
+		Verification verification = verificationRepositoryCustomImpl.findCodeType(verificationCode, "EMAIL");
 		StatusDTO statusDTO = new StatusDTO();
 		
 		if (verification == null) {
 			statusDTO.setStatus("FALSE");
+			statusDTO.setMessage("Invalid code");
 			return statusDTO;
 		}
 		
@@ -229,8 +232,17 @@ public class AccountsController {
 		
 		//create new code
 		RandomVerificationCode rand = new RandomVerificationCode();
-		Verification verification = new Verification(accounts.getId(), rand.randomCode() + Integer.toString(accounts.getId()), "PASSWORD", "TRUE");
+		String code = rand.randomCode() + Integer.toString(accounts.getId());
+		Verification verification = new Verification(accounts.getId(), code, "PASSWORD", "TRUE");
 		verificationRepository.save(verification);
+		
+		//send mail
+		SendEmail sendEmail = new SendEmail();
+		sendEmail.setTo(accounts.getEmail());
+		sendEmail.setCode(code);
+		sendEmail.setLink("");
+		new Thread(sendEmail).start();
+		
 		statusDTO.setMessage("Successful!");
 		statusDTO.setStatus("TRUE");
 		return statusDTO;
@@ -246,25 +258,17 @@ public class AccountsController {
 		
 		if (verification == null) {
 			statusDTO.setStatus("FALSE");
+			statusDTO.setMessage("Invalid code");
 			return statusDTO;
 		}
 		
 		Accounts accounts = accountsRepository.findById(verification.getAccountsId());
 		verification.setActive("FALSE");
 		verificationRepository.save(verification);
+		accounts.setPassword(hashPassword.hash(verificationDTO.getNewPassword()));
+		accountsRepository.save(accounts);
 		
-		//non-active code
-		Verification veri = verificationRepositoryCustomImpl.findAccountsIdType(accounts.getId(), "NEWPASSWORD");
-		if (veri != null) {
-			veri.setActive("FAlSE");
-			verificationRepository.save(veri);
-		}
-				
-		//create new code
-		RandomVerificationCode rand = new RandomVerificationCode();
-		veri = new Verification(accounts.getId(), rand.randomCode() + Integer.toString(accounts.getId()), "NEWPASSWORD", "TRUE");
-		verificationRepository.save(veri);
-		
+		statusDTO.setMessage("Successful!!");
 		statusDTO.setStatus("TRUE");
 		return statusDTO;
 	}
@@ -272,6 +276,7 @@ public class AccountsController {
 	//READ Account information
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.INFO)
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public AccountsDTO readAccountInfomation(HttpServletRequest httpServletRequest) {
 		AccountsDTO accountsDTO = new AccountsDTO();
@@ -296,6 +301,7 @@ public class AccountsController {
 	//Update accounts infomation
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEINFO)
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public StatusDTO updateAccountInformation(@RequestBody AccountsDTO accountsDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
@@ -354,11 +360,12 @@ public class AccountsController {
 	//Update Password
 	@CrossOrigin(origins = "*")
 	@PostMapping(API.UPDATEPASSWORD)
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 	@ResponseBody
 	public StatusDTO resetPassword(@RequestBody PasswordDTO passwordDTO, HttpServletRequest httpServletRequest) {
 		StatusDTO statusDTO = new StatusDTO();
 		String authToken = httpServletRequest.getHeader("authorization");
-		statusDTO = checkJwt.checkJWT(authToken, true);
+		statusDTO = checkJwt.checkJWT(authToken, false);
 		if (statusDTO.getStatus().equals("FALSE")) return statusDTO;
 		
 		String username = jwtService.getUsernameFromToken(authToken);
@@ -399,14 +406,14 @@ public class AccountsController {
 	}
 	
 	//test send mail
-	@CrossOrigin(origins = "*")
-	@PostMapping("/sendmail")
-	public void sendmail() {
-		SendEmail sendEmail = new SendEmail();
-		try{
-			sendEmail.sendEmail("codecodecode");
-		}catch(Exception e) {
-			System.out.println("asdsadsadsadsadsdasdadsdsdsa");
-		}
-	}
+//	@CrossOrigin(origins = "*")
+//	@PostMapping("/sendmail")
+//	public void sendmail() {
+//		SendEmail sendEmail = new SendEmail();
+//		try{
+//			sendEmail.sendEmail("codecodecode");
+//		}catch(Exception e) {
+//			System.out.println("asdsadsadsadsadsdasdadsdsdsa");
+//		}
+//	}
 }
