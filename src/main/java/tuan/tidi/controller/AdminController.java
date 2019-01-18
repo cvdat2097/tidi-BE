@@ -1289,7 +1289,7 @@ public class AdminController {
 			return statusDTO;
 		}
 
-		if (!ordersDTO.getStatus().equals("CHECKED") && !ordersDTO.getStatus().equals("PACKING") && !ordersDTO.getStatus().equals("SHIPPING") && !ordersDTO.getStatus().equals("SUCCESSFUL") && !ordersDTO.getStatus().equals("CANCELED")) {
+		if (!ordersDTO.getStatus().equals("CHECKED") && !ordersDTO.getStatus().equals("PACKING") && !ordersDTO.getStatus().equals("SHIPPING") && !ordersDTO.getStatus().equals("SUCCESSFUL") && !ordersDTO.getStatus().equals("CANCELED") && !ordersDTO.getStatus().equals("PAID") && !ordersDTO.getStatus().equals("PENDING")) {
 			statusDTO.setMessage("Status must be one of {CHECKED, PACKING, SHIPPING, SUCCESSFUL, CANCELED}");
 			statusDTO.setStatus("FALSE");
 			return statusDTO;

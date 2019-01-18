@@ -559,11 +559,6 @@ public class CheckoutController {
 			} catch (Exception e) {
 
 			}
-			try {
-				orderDetailRepository.save(ordersDetail);
-			} catch (Exception e) {
-
-			}
 		}
 
 		// insert orderHistory
@@ -926,12 +921,12 @@ public class CheckoutController {
 				if (obj.getInt("returncode") == 1) {
 					zaloPayStatusDTO.setStatus("SUCCESSFUL");
 					order.setActive("TRUE");
-					order.setStatus("CHECKED");
+					order.setStatus("PAID");
 					OrdersHistory ordersHistory = new OrdersHistory();
 					ordersHistory.setActive("TRUE");
 					ordersHistory.setDateTime(new Date());
 					ordersHistory.setOrderId(orderIdDTO.getOrderId());
-					ordersHistory.setStatus("CHECKED");
+					ordersHistory.setStatus("PAID");
 					orderRepository.save(order);
 					ordersHistoryRepository.save(ordersHistory);
 					return zaloPayStatusDTO;
