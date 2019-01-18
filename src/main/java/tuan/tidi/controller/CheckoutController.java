@@ -449,11 +449,11 @@ public class CheckoutController {
 		for (ProductDTO pro : listProductDTO) {
 			Product product = productRepository.findById(pro.getId());
 			if (product.getActive().equals("FALSE"))
-				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " has been block!!!\n");
+				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " has been block!!!");
 			if (product.getAmount() == 0)
-				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " has run out!!!\n");
+				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " has run out!!!");
 			if (product.getAmount() < pro.getAmount())
-				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " is not enough!!!\n");
+				statusDTO.setMessage(statusDTO.getMessage() + "ProductId " + pro.getId() + " is not enough!!!");
 			total += pro.getPrice() * pro.getAmount() * (float) (1 - pro.getDiscPercent());
 		}
 		if (statusDTO.getMessage() != "") {
@@ -598,8 +598,9 @@ public class CheckoutController {
 		}
 		JSONObject obj = new JSONObject(s);
 		zPTokenDTO.setZptranstoken(obj.getString("zptranstoken"));
-		statusDTO.setStatus("TRUE");
-		zPTokenDTO.setStatus(statusDTO);
+		statusDTO.setStatus(obj.getJSONObject("status").getString("status"));
+		statusDTO.setMessage(obj.getJSONObject("status").getString("message"));
+		zPTokenDTO.setOrderId(String.valueOf(orderId.getOrderId()));		zPTokenDTO.setStatus(statusDTO);
 		return zPTokenDTO;
 	}
 	
